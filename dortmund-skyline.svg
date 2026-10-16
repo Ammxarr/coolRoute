@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 650" role="img" aria-label="Illustrated skyline of Dortmund with the Florianturm and Dortmunder U">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#a7dafa"/><stop offset=".47" stop-color="#e0f3fd"/><stop offset="1" stop-color="#fcf6df"/></linearGradient>
+ <radialGradient id="sun"><stop stop-color="#fff9d9" stop-opacity=".9"/><stop offset="1" stop-color="#fff9d9" stop-opacity="0"/></radialGradient>
+ <linearGradient id="florian" x2="1" y2="0"><stop stop-color="#a6c4cd"/><stop offset=".33" stop-color="#f0f5f4"/><stop offset=".72" stop-color="#a5b9c3"/><stop offset="1" stop-color="#698e9d"/></linearGradient>
+ <linearGradient id="building" x2="0" y2="1"><stop stop-color="#e1e4dc"/><stop offset="1" stop-color="#9eabb5"/></linearGradient>
+ <linearGradient id="bush" x2="0" y2="1"><stop stop-color="#8cbe61"/><stop offset="1" stop-color="#226b51"/></linearGradient>
+ <linearGradient id="canopy" x2="0" y2="1"><stop stop-color="#b4d66c"/><stop offset=".65" stop-color="#438e56"/><stop offset="1" stop-color="#28664e"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="5"/></filter>
+ <g id="cloud" fill="#fff" opacity=".67"><ellipse cx="0" cy="0" rx="90" ry="20"/><ellipse cx="-44" cy="-12" rx="38" ry="25"/><ellipse cx="18" cy="-12" rx="48" ry="28"/><ellipse cx="73" cy="-4" rx="43" ry="18"/></g>
+ <g id="tree"><path d="M0 4V90" stroke="#4b5943" stroke-width="11"/><circle cy="0" r="48" fill="url(#canopy)"/><circle cx="-29" cy="12" r="32" fill="#82bb68"/><circle cx="30" cy="7" r="33" fill="#579e60"/><circle cx="-8" cy="-29" r="31" fill="#a1cf73"/></g>
+</defs>
+<rect width="960" height="650" fill="url(#sky)"/>
+<circle cx="755" cy="121" r="195" fill="url(#sun)"/>
+<use href="#cloud" transform="translate(140 146) scale(1.1)"/><use href="#cloud" transform="translate(462 79) scale(.73)" opacity=".65"/><use href="#cloud" transform="translate(787 210) scale(.86)" opacity=".8"/>
+<path d="M0 453 Q220 436 425 458 T960 449V650H0Z" fill="#d9e3d3" opacity=".54"/>
+<!-- distant skyline -->
+<g fill="url(#building)" opacity=".9">
+ <rect x="10" y="362" width="74" height="143" rx="2"/><rect x="89" y="384" width="69" height="130"/><rect x="159" y="339" width="81" height="176"/><rect x="249" y="399" width="82" height="113"/><rect x="337" y="376" width="86" height="137"/><rect x="426" y="409" width="67" height="113"/><rect x="511" y="366" width="66" height="156"/><rect x="636" y="396" width="72" height="128"/><rect x="712" y="370" width="101" height="163"/><rect x="818" y="411" width="63" height="122"/><rect x="886" y="389" width="74" height="149"/>
+</g>
+<g fill="#eaf0e6" opacity=".85">
+ <path d="M47 364V350H69V364ZM166 342V327H185V342ZM246 403V393H264V403ZM541 370V356H552V370ZM893 391V380H909V391Z"/>
+</g>
+<g stroke="#d5dfdc" stroke-width="4" opacity=".78">
+ <path d="M29 386H72M29 405H72M29 424H72M29 442H72M29 461H72M178 361H217M178 385H217M178 410H217M178 439H217M268 420H319M268 446H319M730 391H795M730 422H795M730 452H795"/>
+</g>
+<!-- Florian tower -->
+<g transform="translate(577 0)">
+ <path d="M-10 504  -6 188H7L11 504" fill="url(#florian)" stroke="#7797a6" stroke-width="2"/>
+ <path d="M-6 188L-7 163H8L7 188" fill="#708d9a"/>
+ <path d="M-6 161-5 131 0 125 5 131 6 161" fill="#667c84"/>
+ <path d="M-1 124V68" stroke="#657a80" stroke-width="4"/>
+ <path d="M0 68V37" stroke="#cc5b45" stroke-width="4"/>
+ <path d="M-36 239Q-41 221-32 213H32Q42 219 37 239Q21 262-20 257Z" fill="#7da0ab" stroke="#4a707e" stroke-width="4"/>
+ <path d="M-32 222H33" stroke="#e4f3f3" stroke-width="6"/>
+ <path d="M-28 239H27" stroke="#344f61" stroke-width="9"/>
+ <path d="M-29 245H30" stroke="#a1b7bf" stroke-width="5"/>
+ <path d="M-18 190H18L24 206H-23Z" fill="#94afb7" stroke="#557888" stroke-width="3"/>
+ <path d="M-17 199H17" stroke="#3f6879" stroke-width="7"/>
+</g>
+<!-- Dortmunder U complex -->
+<g transform="translate(744 0)">
+ <rect x="0" y="359" width="139" height="183" rx="3" fill="#a7b0a9" stroke="#708994" stroke-width="2"/>
+ <rect x="14" y="375" width="112" height="152" fill="#9aabaf"/>
+ <rect x="0" y="347" width="139" height="21" fill="#747f82"/>
+ <rect x="28" y="337" width="83" height="21" fill="#647880"/>
+ <path d="M42 320V298H56V321Q56 331 69 331Q80 331 80 320V298H94V324Q94 345 69 345Q43 345 42 320Z" fill="#f5cc35" stroke="#e5ab14" stroke-width="2"/>
+ <path d="M33 390H108M33 420H108M33 449H108M33 479H108M33 508H108" stroke="#c6d8d0" stroke-width="4"/>
+ <path d="M39 375V523M68 375V523M98 375V523" stroke="#748f94" stroke-width="4"/>
+</g>
+<!-- park and layered trees -->
+<path d="M0 508 Q186 470 334 500 T662 494T960 487V650H0Z" fill="#a7c990"/>
+<g opacity=".82"><use href="#tree" transform="translate(51 486) scale(.62)"/><use href="#tree" transform="translate(202 486) scale(.66)"/><use href="#tree" transform="translate(343 494) scale(.56)"/><use href="#tree" transform="translate(457 488) scale(.66)"/><use href="#tree" transform="translate(679 483) scale(.57)"/><use href="#tree" transform="translate(924 472) scale(.76)"/></g>
+<path d="M0 551Q141 521 270 549T590 539T960 552V650H0Z" fill="#5b9a63"/>
+<g><use href="#tree" transform="translate(26 554) scale(1.3)"/><use href="#tree" transform="translate(148 574) scale(1.12)"/><use href="#tree" transform="translate(320 560) scale(.9)"/><use href="#tree" transform="translate(503 581) scale(1.08)"/><use href="#tree" transform="translate(735 566) scale(.9)"/><use href="#tree" transform="translate(942 578) scale(1.24)"/></g>
+<path d="M0 625 Q190 596 372 627 T960 619V650H0Z" fill="#23684e"/>
+</svg>

@@ -1,0 +1,39 @@
+/* CoolRoute navigation: full-screen, map-first. All styles isolated under .crnav-page. */
+.crnav-page{position:relative;overflow:hidden!important;background:#eaf3ed!important;isolation:isolate;color:#10314a}
+.crnav-page .crnav-map-wrap{position:absolute;inset:51px 0 0;min-height:0!important;flex:auto!important;z-index:0;border:0}
+.crnav-page .leaflet-container{background:#e7f2eb}
+.crnav-page .leaflet-tile-pane{filter:saturate(.67) brightness(1.055) contrast(.93)}
+.crnav-page .leaflet-control-attribution{font-size:8px!important;background:#ffffffd9!important;max-width:100%;white-space:normal}
+.crnav-page .crnav-instruction{position:absolute;top:64px;left:11px;right:11px;z-index:680;pointer-events:none}
+.crnav-page .crr-nav-banner{position:relative;inset:auto;display:flex;align-items:center;gap:13px;border-radius:15px;padding:15px 13px;background:#0d5b89;box-shadow:0 6px 18px #173e5373;color:white;pointer-events:auto;min-height:88px}
+.crnav-turn-icon{width:46px;flex:0 0 46px;font-size:51px;line-height:1;font-weight:800;text-align:center}
+.crnav-turn-content{min-width:0;flex:1}
+.crnav-next-distance{font-size:23px;font-weight:850;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.crnav-page .crr-nav-banner p{font-size:13px;line-height:1.35;margin:2px 0 3px;color:#fff;font-weight:650}
+.crnav-page .crr-nav-banner small{font-size:10px;color:#d2ebf5;line-height:1.2}
+.crnav-page .crnav-tools{position:absolute;top:166px;left:11px;right:11px;z-index:650;display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}
+.crnav-tool-toggle{border:1px solid #d6e7e9;background:#ffffffef;color:#184e65;box-shadow:0 3px 12px #123a451d;border-radius:24px;padding:10px 13px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:780;cursor:pointer;pointer-events:auto;min-height:39px}
+.crnav-tool-toggle svg{color:#118463}.crnav-tool-toggle span{margin-left:2px}
+.crnav-chips{width:100%;max-height:126px;overflow-y:auto;display:flex;gap:6px;flex-wrap:wrap;scrollbar-width:thin;pointer-events:auto;background:#ffffffef;border-radius:12px;padding:8px;box-shadow:0 3px 14px #17364a22}
+.crnav-chips[hidden]{display:none!important}
+.crnav-chip{display:inline-flex;align-items:center;gap:5px;min-height:32px;border:1px solid #dee7e7;background:white;color:#335c6c;border-radius:20px;padding:7px 9px;font-weight:750;font-size:10px;cursor:pointer}
+.crnav-chip.active{background:#0d795f;color:white;border-color:#0d795f}
+.crnav-chip svg{width:14px;height:14px}
+.crnav-page .crnav-map-actions{position:absolute;right:11px;bottom:177px;z-index:640}
+.crnav-map-actions button{width:44px;height:44px;border:1px solid #d5e5e9;border-radius:50%;background:white;box-shadow:0 3px 15px #123a452d;color:#0e5d88;font-size:28px;cursor:pointer}
+.crnav-page .crnav-bottom{position:absolute;left:0;right:0;bottom:0;max-height:none;z-index:660;background:white;border-radius:19px 19px 0 0;padding:16px 15px 20px;box-shadow:0 -4px 23px #163b4430;overflow:visible}
+.crnav-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.crnav-remaining{display:flex;flex-direction:column;gap:4px}
+.crnav-remaining strong{font-size:24px;line-height:1.1;color:#102e43;font-weight:900;font-variant-numeric:tabular-nums}
+.crnav-distance{font-size:12px;color:#476273}
+.crnav-end{background:#e43c48;color:white;border:0;border-radius:12px;min-height:44px;padding:10px 19px;font-size:13px;font-weight:780;cursor:pointer}
+.crnav-route-type{font-size:11px;font-weight:720;color:#187b66;margin:7px 0 0}
+.crnav-bottom-footer{margin-top:9px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.crnav-data-note{font-size:9px;line-height:1.4;color:#657f88;flex:1}
+.crnav-preview-step{border:1px solid #c5dfec;border-radius:9px;background:#edf6fb;color:#175b7d;padding:7px;font-size:10px;font-weight:700;flex:none}
+.crnav-pin-wrap{background:none;border:0}
+.crnav-pin{--pin:#07865a;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:2px;width:max-content;min-width:27px;height:28px;padding:4px 5px;border:2px solid white;border-radius:11px 11px 11px 3px;background:var(--pin);color:white;box-shadow:0 2px 7px #19394166;transform:translate(-1px,-3px)}
+.crnav-pin span{font-size:10px;font-weight:900}
+.crnav-popup{font-size:12px;min-width:130px;line-height:1.4}.crnav-popup strong{color:#173e52}.crnav-popup p{margin:6px 0;color:#416476}.crnav-popup a{color:#0e6b9d}
+.crnav-page button:focus-visible{outline:3px solid #197dd9;outline-offset:3px}
+@media(max-height:730px){.crnav-page .crr-nav-banner{min-height:74px;padding:10px 12px}.crnav-page .crnav-tools{top:146px}.crnav-page .crnav-bottom{padding:12px 13px 17px}.crnav-page .crnav-map-actions{bottom:162px}.crnav-turn-icon{font-size:42px}}

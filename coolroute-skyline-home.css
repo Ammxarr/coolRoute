@@ -1,0 +1,70 @@
+/* CoolRoute skyline-led home — scoped so the map/routing UI is unchanged. */
+.crs-home { background:#fff; color:#0c2c43; font-family:inherit; overflow:hidden; }
+.crs-home .crs-home-scroll { height:100%; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:0 0 108px; box-sizing:border-box; }
+.crs-home .crs-hero { position:relative; isolation:isolate; min-height:304px; display:flex; flex-direction:column; overflow:hidden;
+  background:linear-gradient(145deg,#bfebff 2%,#eefaff 68%,#e7f4dc 100%); }
+.crs-home .crs-hero-art { position:absolute; inset:0; z-index:-1; background-image:
+   linear-gradient(90deg,rgba(238,249,255,.84) 0%,rgba(235,247,255,.57) 43%,rgba(236,247,255,.04) 78%),
+   linear-gradient(0deg,rgba(240,250,240,.06),transparent 58%),url('dortmund-skyline.svg');
+ background-position: center, center, 55% 50%; background-size:cover; }
+.crs-home .crs-brandbar { display:flex; align-items:center; justify-content:space-between; padding:19px 19px 8px; z-index:1; gap:9px; }
+.crs-home .crs-brand { display:flex; align-items:center; gap:8px; }
+.crs-home .crs-brand-leaf { width:34px; height:34px; flex:none; display:block; }
+.crs-home .crs-brand-leaf svg { width:100%; height:100%; }
+.crs-home .crs-brand-name { font-size:20px; letter-spacing:-1px; line-height:1; font-weight:900; color:#103954; }
+.crs-home .crs-brand-dot { color:#0b936d; }
+.crs-home .crs-brand-name small { display:block; font-size:6.3px; font-weight:900; letter-spacing:.06em; color:#367080; margin-top:4px; }
+.crs-home .crs-profile-button { width:38px; height:38px; border:1px solid rgba(231,243,251,.92); background:rgba(255,255,255,.95); color:#173b50;
+ border-radius:50%; display:grid; place-items:center; box-shadow:0 2px 10px #17485a1b; cursor:pointer; flex:none; }
+.crs-home .crs-profile-button svg { width:21px; height:21px; }
+.crs-home .crs-hero-copy { margin:21px 0 0; width:min(79%,330px); padding:0 18px 65px; z-index:1; }
+.crs-home .crs-hero-title { display:flex; flex-direction:column; font-weight:900; letter-spacing:-1.4px; font-size:35px; line-height:1.05; color:#0a2e47;
+ text-shadow:0 1px 2px #f3fbfd70; }
+.crs-home .crs-hero-copy p { margin:9px 0 0; max-width:226px; font-size:12.2px; line-height:1.43; font-weight:600; color:#1d465b; }
+.crs-home .crs-home-body { padding:0 17px 32px; position:relative; }
+.crs-home .crs-weather-card { position:relative; z-index:2; margin:-23px 0 22px; }
+.crs-home .crs-weather-card .crh-weather { padding:15px 16px 12px; border-radius:19px; border:1px solid #e7eff1;
+ box-shadow:0 7px 23px #153b5a14; background:#ffffffed; backdrop-filter:blur(8px); }
+.crs-home .crs-weather-card .crh-weather-inner strong { font-size:27px; }
+.crs-home .crs-weather-card .crh-weather-right { font-size:10px; }
+.crs-home .crs-weather-card .crh-weather-credit { margin-top:8px; font-size:9.6px; }
+.crs-home .crs-section-title { margin:0 0 12px; font-size:16.5px; font-weight:900; letter-spacing:-.3px; color:#103954; }
+.crs-home .crs-actions { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; align-items:start; }
+.crs-home .crs-action { background:none; border:0; cursor:pointer; padding:0 1px; color:#12364e; font-size:10.5px; line-height:1.22; font-weight:780;
+ display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; min-width:0; }
+.crs-home .crs-action-ico { border-radius:50%; width:56px; height:56px; display:grid; place-items:center; box-shadow:0 1px 4px #183b4807; }
+.crs-home .crs-action-ico svg { width:28px; height:28px; }
+.crs-home .sky-blue { background:#d8eefb; color:#005d9b; }
+.crs-home .sky-green { background:#d7f6e4; color:#00826a; }
+.crs-home .sky-amber { background:#fff1c9; color:#bd8d09; }
+.crs-home .sky-coral { background:#ffe6df; color:#b14e42; }
+.crs-home .crs-action:active { transform:scale(.97); }
+.crs-home .crs-feature-card { display:flex; align-items:center; gap:12px; margin:26px 0 8px; padding:15px 13px; border-radius:19px;
+ background:linear-gradient(120deg,#f0faf5,#f8fcfa); border:1px solid #d9ede5; }
+.crs-home .crs-feature-illustration { display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:15px;
+ background:#d7f1e5; color:#067c67; min-width:53px; height:62px; }
+.crs-home .crs-feature-illustration svg { width:26px; height:26px; margin:-1px 0; }
+.crs-home .crs-feature-card>div:nth-child(2) { min-width:0; flex:1; }
+.crs-home .crs-feature-card h3 { margin:0 0 4px; color:#103a52; font-size:14px; font-weight:850; }
+.crs-home .crs-feature-card p { font-size:10.5px; line-height:1.4; color:#46667a; margin:0; }
+.crs-home .crs-feature-button { width:34px; height:34px; flex:none; background:white; color:#0e6e65; border:1px solid #d4e7de;
+ border-radius:50%; display:grid; place-items:center; cursor:pointer; }
+.crs-home .crs-feature-button svg { width:18px; height:18px; }
+.crs-home .crs-photo-note { font-size:9.5px; text-align:center; color:#7e989c; letter-spacing:.16em; margin:17px 0 0; }
+.crs-home button:focus-visible { outline:3px solid #1976b6; outline-offset:3px; }
+.crs-home .bottom-nav.cr3-tabs { position:absolute; bottom:0; left:0; right:0; }
+/* Other add-ons may omit the three-tab style; the existing bottom() still works. */
+.crs-launch { position:absolute; inset:0; z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center;
+ background:linear-gradient(#f0faff,#fff 70%); color:#125476; opacity:0; transition:opacity .22s ease; pointer-events:all; }
+.crs-launch.is-on {opacity:1;}
+.crs-launch.is-gone {opacity:0; pointer-events:none;}
+.crs-launch-art { width:72%; max-width:320px; }
+.crs-launch-art svg { width:100%; height:auto; overflow:visible; }
+.crs-launch-art path { fill:none; stroke:#09876c; stroke-linecap:round; stroke-linejoin:round; stroke-width:3;
+ stroke-dasharray:800; stroke-dashoffset:800; animation:crs-draw .8s cubic-bezier(.28,.55,.23,1) both; }
+.crs-launch strong { font-size:26px; line-height:1; margin:14px 0 5px; color:#103954; font-weight:900; letter-spacing:-1.2px; }
+.crs-launch strong span { color:#119671; }
+.crs-launch small { font-size:9px; letter-spacing:.38em; font-weight:800; }
+@keyframes crs-draw {to {stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.crs-launch{transition:none}.crs-launch-art path{animation:none;stroke-dashoffset:0}.crs-home .crs-action:active{transform:none}}
+@media(max-width:380px){.crs-home .crs-hero-title{font-size:31px}.crs-home .crs-hero-copy{width:83%}.crs-home .crs-action-ico{width:50px;height:50px}.crs-home .crs-action{font-size:9.5px}}

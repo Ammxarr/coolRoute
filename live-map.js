@@ -18,7 +18,7 @@
   const SMALL = ['shade', 'water', 'indoor', 'sensors'];
   const SENSOR_REFRESH_MS = 5 * 60 * 1000; // Published measurement cadence; data may be older.
   const TREE_MIN_ZOOM = 16;
-  const TREE_LIMIT = 1000; // Prevent a dense viewport from overwhelming a phone.
+  const TREE_LIMIT = 350; // Prevent a dense viewport from overwhelming a phone.
   const PAGE_SIZE = 100; // Opendatasoft's record-query page size.
 
   let map = null;
@@ -420,7 +420,7 @@
     }, SENSOR_REFRESH_MS);
     map.on('moveend', () => {
       if (moveTimer) clearTimeout(moveTimer);
-      moveTimer = setTimeout(() => { if (map) updateTrees(); }, 180);
+      moveTimer = setTimeout(() => { if (map) updateTrees(); }, 360);
       refreshStatus();
     });
     updateTrees();
