@@ -35,8 +35,9 @@
   const labels = {en:{title:'Real walking routes',start:'From',end:'To',time:'Departure time',calculate:'Find cooler routes',working:'Calculating walkable routes and checking Dortmund Open Data…',fail:'Unable to calculate a real pedestrian route.',retry:'Try again',fastest:'Fastest',balanced:'Balanced',shade:'Coolest candidate',compare:'Compare routes',details:'Route details',navigate:'Start GPS navigation',turns:'Directions',endNav:'End navigation',location:'Use my location',selection:'Choose a destination',distance:'Distance',duration:'Walking time',mrt:'Estimated MRT',noMrt:'No recent air temperature; MRT unavailable',shadePercent:'Estimated exposure to shade',limits:'Experimental modeled exposure, not measured MRT. Route preference is only compared among available candidates.',facilities:'Nearby facilities (dataset matches)',methods:'Data and method',reroute:'Recalculate',arrived:'Destination reached',finish:'Finish',next:'Next instruction (preview)',gps:'GPS navigation',gpsFail:'Location unavailable. Navigation requires browser location permission and HTTPS or localhost.',noData:'Missing municipal data',unknown:'Unavailable',approx:'Model estimate',path:'Pedestrian route by Valhalla/OSM',status:'Checking sources…',depart:'Departure',preview:'Preview directions',home:'Home'},de:{title:'Echte Fußwege',start:'Start',end:'Ziel',time:'Startzeit',calculate:'Kühlere Wege finden',working:'Fußwege werden berechnet. Dortmunder Umweltdaten werden geladen …',fail:'Es konnte keine echte Fußroute berechnet werden.',retry:'Erneut versuchen',fastest:'Schnellster Weg',balanced:'Ausgewogen',shade:'Kühlster Kandidat',compare:'Wege vergleichen',details:'Wegdetails',navigate:'GPS-Navigation starten',turns:'Wegbeschreibung',endNav:'Navigation beenden',location:'Mein Standort',selection:'Bitte ein Ziel wählen',distance:'Entfernung',duration:'Gehzeit',mrt:'Geschätzte MRT',noMrt:'Keine aktuellen Temperaturdaten; MRT nicht verfügbar',shadePercent:'Geschätzter Schattenanteil',limits:'Experimentelle Modellwerte, keine gemessene MRT. Nur verfügbare Routen werden verglichen.',facilities:'Orte in der Nähe (aus Datensätzen)',methods:'Daten und Methode',reroute:'Neu berechnen',arrived:'Ziel erreicht',finish:'Fertig',next:'Nächste Anweisung (Vorschau)',gps:'GPS-Navigation',gpsFail:'Standort nicht verfügbar. Erlaube den Zugriff über HTTPS oder localhost.',noData:'Kommunale Daten fehlen',unknown:'Nicht verfügbar',approx:'Modellschätzung',path:'Fußweg: Valhalla/OSM',status:'Datenquellen werden geprüft…',depart:'Startzeit',preview:'Wegvorschau',home:'Startseite'},simple:{title:'Wege zu Fuß',start:'Hier starten',end:'Hierhin gehen',time:'Wann gehst du?',calculate:'Kühlen Weg suchen',working:'Wir suchen Wege und Orte mit Schatten …',fail:'Wir konnten keinen Weg finden.',retry:'Nochmal suchen',fastest:'Schnell',balanced:'Gut gemischt',shade:'Weniger Sonne',compare:'Wege ansehen',details:'Infos zum Weg',navigate:'Mit GPS starten',turns:'So gehst du',endNav:'Aufhören',location:'Mein Ort',selection:'Such ein Ziel aus',distance:'So weit',duration:'So lange',mrt:'Hitze-Schätzwert',noMrt:'Keine aktuellen Daten zur Lufttemperatur',shadePercent:'Wie viel Schatten?',limits:'Die Hitze ist nur geschätzt. Bitte prüfe deinen Weg vor Ort.',facilities:'Orte am Weg',methods:'Woher kommen die Daten?',reroute:'Neuen Weg suchen',arrived:'Du bist da',finish:'Fertig',next:'Nächster Schritt (Test)',gps:'GPS verwenden',gpsFail:'Wir finden deinen Standort nicht. Bitte Standort erlauben.',noData:'Nicht alle Daten da',unknown:'Keine Daten',approx:'Geschätzt',path:'Echter Fußweg auf der Karte',status:'Daten werden geladen …',depart:'Start',preview:'Weg ansehen',home:'Start'}};
   const l = () => {let v='en'; try {v=localStorage.getItem('cr-hack-lang')||'en';}catch{}return labels[v]?v:'en';};
   const t = key => labels[l()][key]||labels.en[key]||key;
-  const service = {status:'idle', error:'', routeList:[], selected:'shade', sources:{}, warnings:[], features:{}, departure:'', origin:null,destination:null, gps:null, watch:null, leaf:null, loadingId:0, resultMap:null, mapMount:0, liveInstruction:0, nearestDistance:null, gpsOn:false, purpose:'', mobility:'Walking',withDog:false,withKids:false};
+  const service = {status:'idle', error:'', routeList:[], selected:'shade', sources:{}, warnings:[], features:{}, departure:'', origin:null,destination:null, gps:null, watch:null, leaf:null, loadingId:0, resultMap:null, mapMount:0, liveInstruction:0, nearestDistance:null, gpsOn:false, dataCache:null, purpose:'', mobility:'Walking',withDog:false,withKids:false};
   window.CoolRouteRouting = service;
+  service.version='distinct-routes-v2';
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const radians=n=>n*Math.PI/180;
   function meters(a,b){const dlat=radians(b[0]-a[0]),dlon=radians(b[1]-a[1]);const q=Math.sin(dlat/2)**2+Math.cos(radians(a[0]))*Math.cos(radians(b[0]))*Math.sin(dlon/2)**2;return 12742000*Math.asin(Math.min(1,Math.sqrt(q)));}
@@ -80,22 +81,40 @@
     counts[kind]=null;if(!service.sources[kind]?.ok)continue;
     counts[kind]=(features[kind]||[]).filter(f=>samples.some(s=>meters(f.at,s)<threshold)).length;
   }return counts;}
-  function scoreRoute(route,features,departure){const samples=candidateSamples(route.coords);const sun=sunPosition(dateAtTime(departure),route.coords[0][0],route.coords[0][1]);const temps=Math.abs(dateAtTime(departure).getTime()-Date.now())<=2*3600000?latestTemperatures(features):[];
-    let weightedShade=0, weightedRad=0, tempWeight=0, length=0, costBalanced=0, costCoolest=0;
-    for(const p of samples){const shade=shadeAt(p,features,sun),air=localTemp(p,temps),w=p[2];length+=w;weightedShade+=shade*w;const mrt=modelMrt(air,shade,sun);if(mrt!==null){weightedRad+=mrt*w;tempWeight+=w;}
-      const heatPenalty = mrt!==null ? clamp((mrt-22)/35,0,1.5) : Math.max(0,Math.sin(sun.alt))*(1-shade);
-      costBalanced += w*(1 + .45*heatPenalty - .12*shade);
-      costCoolest += w*(1 + 1.10*heatPenalty - .35*shade);
+  function scoreRoute(route, features, departure) {
+    const samples=candidateSamples(route.coords), sun=sunPosition(dateAtTime(departure),route.coords[0][0],route.coords[0][1]);
+    const daylight=sun.alt>.075, hasShadeData=!!(service.sources.trees?.ok||service.sources.shade?.ok);
+    const sensors=Math.abs(dateAtTime(departure).getTime()-Date.now())<=2*3600000?latestTemperatures(features):[];
+    let shadeTotal=0, greenTotal=0, radTotal=0, radMeters=0, total=0, balancedCost=0, coolCost=0;
+    for(const sample of samples){
+      const p=[sample[0],sample[1]],w=sample[2];total+=w;
+      const sh=daylight&&hasShadeData?shadeAt(p,features,sun):0;
+      // Green-proximity is NOT shade: it is an independent feature useful after sunset.
+      let nearGreen=0;
+      if(hasShadeData){
+        const treeNearby=(features.trees||[]).some(tree=>meters(p,tree.at)<22);
+        const shadeNearby=(features.shade||[]).some(place=>meters(p,place.at)<50);
+        nearGreen=treeNearby?1:shadeNearby?.55:0;
+      }
+      shadeTotal+=sh*w;greenTotal+=nearGreen*w;
+      const air=localTemp(p,sensors),mrt=daylight?modelMrt(air,sh,sun):air;
+      if(mrt!==null){radTotal+=mrt*w;radMeters+=w;}
+      const heatPenalty=daylight?(mrt!==null?clamp((mrt-22)/35,0,1.5):Math.sin(sun.alt)*(1-sh)):0;
+      // Non-negative edge costs. Lower = preferred; distance remains a strong influence.
+      balancedCost+=w*(1+.65*heatPenalty-.09*sh-.08*nearGreen);
+      coolCost+=w*(1+1.65*heatPenalty-.28*sh-.17*nearGreen);
     }
-    const shade=length?weightedShade/length:0;const avgMrt=tempWeight>=length*.75?weightedRad/tempWeight:null;
-    // ranking with heat proxy even when temperature data unavailable: air is spatially similar across nearby routes.
-    const exposure=costCoolest;
-    const amenities=facilitiesAlong(samples,features);return {...route,shade,avgMrt,exposure,costBalanced,costCoolest,amenities,solar: sun,stations:temps.length};
+    const amen=facilitiesAlong(samples,features);
+    return {...route,shade:daylight&&hasShadeData&&total?shadeTotal/total:null,
+      greenProximity:hasShadeData&&total?greenTotal/total:null,
+      avgMrt:daylight&&radMeters>=total*.75?radTotal/radMeters:null,
+      daylight,hasShadeData,exposure:coolCost,costBalanced:balancedCost,costCoolest:coolCost,
+      amenities:amen,stations:sensors.length,solar:sun};
   }
   function decodePolyline(encoded){let lat=0,lon=0,index=0;const pts=[];while(index<encoded.length){let shift=0,result=0,b;do{b=encoded.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5;}while(b>=32&&index<encoded.length);lat+=(result&1)?~(result>>1):result>>1;
       shift=0;result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5;}while(b>=32&&index<encoded.length);lon+=(result&1)?~(result>>1):result>>1;pts.push([lat/1e6,lon/1e6]);}return pts;}
   async function fetchJson(url,timeout=15000){const ctrl=new AbortController();const handle=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(url,{signal:ctrl.signal,headers:url.startsWith(ROUTE_API)?{'X-Client-Id':'coolroute-dortmund-hackathon'}:{}});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(handle);}}
-  async function cityData(kind, slug, bound){const result=[];const base=API+encodeURIComponent(slug)+'/records';const maxPages=kind==='trees'?7:kind==='readings'?2:2;let queried=0,total=0,usedFallback=false;
+  async function cityData(kind, slug, bound){const result=[];const base=API+encodeURIComponent(slug)+'/records';const maxPages=kind==='trees'?12:kind==='readings'?2:2;let queried=0,total=0,usedFallback=false;
     for(let page=0;page<maxPages;page++){
       const params=new URLSearchParams({limit:'100',offset:String(page*100)});
       if(kind==='readings')params.set('order_by','measured_at desc');
@@ -120,20 +139,121 @@
     }
     can.sort((a,b)=>a.score-b.score);const selected=[];for(const entry of can){if(selected.every(p=>meters(p,entry.coord)>200)){selected.push(entry.coord);if(selected.length>=3)break;}}return selected;
   }
-  async function getPedRoute(points){const body={locations:points.map(([lat,lon],i)=>({lat,lon,type:i===0||i===points.length-1?'break':'through'})),costing:'pedestrian',units:'km',language:l()==='en'?'en-US':'de-DE',costing_options:{pedestrian:{walking_speed:5.0}}};
-    const json=await fetchJson(ROUTE_API+'?json='+encodeURIComponent(JSON.stringify(body)),20000);if(!json?.trip?.legs?.length||!json.trip.summary)throw new Error(json?.error||'No pedestrian route');
-    const all=[],maneuvers=[];for(const leg of json.trip.legs){const line=decodePolyline(leg.shape);if(!line.length)continue;const offset=all.length;all.push(...line);for(const m of leg.maneuvers||[])maneuvers.push({instruction:m.instruction||'',index:offset+(m.begin_shape_index||0),type:m.type||0,km:m.length||0});}
-    if(all.length<2)throw new Error('No valid route geometry');return {coords:all,km:Number(json.trip.summary.length),minutes:Math.round(json.trip.summary.time/60),maneuvers};
+  function routeFromTrip(trip){
+    if(!trip?.legs?.length||!trip.summary)return null;
+    const coords=[],maneuvers=[];
+    for(const leg of trip.legs){
+      const line=decodePolyline(leg.shape||'');if(!line.length)continue;
+      const offset=coords.length;coords.push(...line);
+      for(const m of leg.maneuvers||[])maneuvers.push({instruction:m.instruction||'',index:offset+(m.begin_shape_index||0),type:m.type||0,km:m.length||0});
+    }
+    if(coords.length<2)return null;
+    const km=Number(trip.summary.length),minutes=Math.max(1,Math.round(Number(trip.summary.time)/60));
+    return Number.isFinite(km)&&km>0&&Number.isFinite(minutes)?{coords,km,minutes,maneuvers}:null;
+  }
+  async function getPedRoutes(points, alternatives=0){
+    const body={locations:points.map(([lat,lon],i)=>({lat,lon,type:i===0||i===points.length-1?'break':'through'})),
+      costing:'pedestrian',units:'km',language:l()==='en'?'en-US':'de-DE',
+      costing_options:{pedestrian:{walking_speed:5.0}}};
+    if(points.length===2&&alternatives)body.alternates=alternatives;
+    const json=await fetchJson(ROUTE_API+'?json='+encodeURIComponent(JSON.stringify(body)),20000);
+    const primary=routeFromTrip(json.trip);if(!primary)throw new Error(json?.error||'No valid pedestrian route');
+    // Some Valhalla installations return alternatives in alternates[]; gracefully handle other shapes.
+    const extras=(json.alternates||json.alternatives||[]).map(entry=>routeFromTrip(entry.trip||entry)).filter(Boolean);
+    return [primary,...extras];
+  }
+  // Two pedestrian paths are different only when they use substantially different streets.
+  // Distance and duration alone are not a reliable way to detect duplicates.
+  function segmentDistance(p,a,b){
+    const lat=radians(p[0]),sx=111320*Math.cos(lat),sy=111320;
+    const ax=(a[1]-p[1])*sx,ay=(a[0]-p[0])*sy,bx=(b[1]-p[1])*sx,by=(b[0]-p[0])*sy;
+    const dx=bx-ax,dy=by-ay,u=clamp(-(ax*dx+ay*dy)/Math.max(.0001,dx*dx+dy*dy),0,1);
+    return Math.hypot(ax+u*dx,ay+u*dy);
+  }
+  function overlap(routeA,routeB){
+    const pts=candidateSamples(routeA.coords,65);let near=0,all=0;
+    for(const p of pts){const w=p[2];all+=w;
+      if(routeB.coords.slice(1).some((b,i)=>segmentDistance(p,routeB.coords[i],b)<32))near+=w;
+    }
+    return all?near/all:1;
+  }
+  function materiallyDifferent(a,b){return Math.min(overlap(a,b),overlap(b,a))<.82;}
+  function lateralWaypoints(route,origin,dest){
+    // Offset from the actual pedestrian route, not a direct aerial line.
+    // The routing engine snaps the waypoints to walkable OSM streets.
+    const pts=candidateSamples(route.coords,90);if(!pts.length)return [];
+    const cumulative=[];let total=0;for(const v of pts){total+=v[2];cumulative.push(total);}
+    const result=[];
+    for(const fraction of [.35,.62]){
+      const idx=cumulative.findIndex(x=>x>=total*fraction),k=Math.max(1,Math.min(pts.length-2,idx));
+      const p=pts[k],before=pts[k-1],after=pts[k+1];
+      const vx=(after[1]-before[1])*111320*Math.cos(radians(p[0]));
+      const vy=(after[0]-before[0])*111320;
+      const norm=Math.hypot(vx,vy)||1;
+      for(const side of [1,-1]){
+        const offset=clamp(meters(origin,dest)*.105,170,340)*side;
+        const lat=p[0]+offset*(-vx/norm)/111320;
+        const lon=p[1]+offset*(vy/norm)/(111320*Math.cos(radians(p[0])));
+        result.push([lat,lon]);
+      }
+    }
+    return result;
+  }
+  function selectDistinctProfiles(scored){
+    const shortest=[...scored].sort((a,b)=>a.minutes-b.minutes||a.km-b.km)[0];
+    const others=scored.filter(r=>r!==shortest&&materiallyDifferent(r,shortest));
+    const selections=[{...shortest,id:'fastest'}];if(!others.length)return selections;
+    const sunAvailable=shortest.daylight&&shortest.hasShadeData;
+    const balance=[...others].sort((a,b)=>a.costBalanced-b.costBalanced)[0];
+    const coolest=[...others].sort((a,b)=>a.costCoolest-b.costCoolest)[0];
+    if(others.length===1){selections.push({...others[0],id:sunAvailable?'shade':'balanced'});return selections;}
+    // Give each label a distinct physical path; do not duplicate a line in three colors.
+    let altCool=coolest;
+    if(altCool===balance){altCool=[...others].filter(r=>materiallyDifferent(r,balance)).sort((a,b)=>a.costCoolest-b.costCoolest)[0]||null;}
+    selections.push({...balance,id:'balanced'});
+    if(altCool)selections.push({...altCool,id:'shade'});
+    return selections;
   }
   async function calculate(){if(service.status==='loading')return;const from=service.origin||names[state.start],to=service.destination||names[state.end];if(!from||!to||meters(from,to)<80){service.status='error';service.error='Choose two distinct Dortmund locations.';goto('results');return;}
     service.departure=document.getElementById('crr-depart')?.value||service.departure||new Date().toTimeString().slice(0,5);
     service.status='loading';service.routeList=[];service.error='';service.warnings=[];goto('results');const job=++service.loadingId;
     try{const distance=meters(from,to);if(distance>10500)throw new Error('For this prototype, select places within approximately 10 km.');
-      const directPromise=getPedRoute([from,to]).then(route=>({route}),error=>({error}));const features=await getEnvironmentalData(from,to);const directResult=await directPromise;if(directResult.error)throw directResult.error;const direct=directResult.route;if(job!==service.loadingId)return;
-      service.features=features;
-      const via=waypoints(features,from,to);const possibilities=[direct];for(const p of via.slice(0,2)){try{await new Promise(resolve=>setTimeout(resolve,1200));const alt=await getPedRoute([from,p,to]);if(alt.km<=direct.km*1.55+0.2 && alt.km>0 && !possibilities.some(s=>Math.abs(s.km-alt.km)<.015&&meters(s.coords[Math.floor(s.coords.length/2)],alt.coords[Math.floor(alt.coords.length/2)])<50))possibilities.push(alt);}catch(e){service.warnings.push('Alternative walking route unavailable: '+e.message);}}
-      const scored=possibilities.map(r=>scoreRoute(r,features,service.departure));scored.sort((a,b)=>a.km-b.km);const fastest=scored[0];const cool=[...scored].sort((a,b)=>a.exposure-b.exposure)[0];const balance=[...scored].sort((a,b)=>a.costBalanced-b.costBalanced)[0];
-      service.routeList=[{...fastest,id:'fastest'},{...balance,id:'balanced'},{...cool,id:'shade'}];service.selected='shade';state.selectedRoute='shade';service.status='success';if(service.routeList.length&&possibilities.length===1)service.warnings.push('Only one independent walking route was available. All profiles use that route.');
+      const directPromise=getPedRoutes([from,to],2).then(routes=>({routes}),error=>({error}));
+      const key=from.join(',')+'|'+to.join(',');
+      let features;if(service.dataCache?.key===key && Date.now()-service.dataCache.saved<300000){features=service.dataCache.features;service.sources=service.dataCache.sources;}
+      else{features=await getEnvironmentalData(from,to);service.dataCache={key,saved:Date.now(),features,sources:service.sources};}
+      const directResult=await directPromise;
+      if(directResult.error)throw directResult.error;
+      const direct=directResult.routes[0];if(job!==service.loadingId)return;service.features=features;
+      const possibilities=[];
+      function addRoute(route){
+        if(!route||route.km>direct.km*1.65+.15||route.minutes>direct.minutes*1.85+5)return false;
+        if(!possibilities.every(prev=>materiallyDifferent(prev,route)))return false;
+        possibilities.push(route);return true;
+      }
+      addRoute(direct);
+      for(const candidate of directResult.routes.slice(1))addRoute(candidate);
+      // First prefer actual municipal shaded sites and tree clusters, then try
+      // lateral on-street waypoints if the service returns too few alternatives.
+      const municipal=waypoints(features,from,to);
+      const offsets=lateralWaypoints(direct,from,to);
+      const tries=[...municipal,...offsets].filter((pt,i,arr)=>arr.findIndex(other=>meters(other,pt)<95)===i);
+      let requests=0;
+      for(const waypoint of tries){
+        if(possibilities.length>=4||requests>=7)break;
+        requests++;
+        try{
+          await new Promise(resolve=>setTimeout(resolve,450));
+          const routes=await getPedRoutes([from,waypoint,to]);
+          for(const route of routes)addRoute(route);
+        }catch(e){service.warnings.push('A detour was unavailable: '+e.message);}
+      }
+      const scored=possibilities.map(r=>scoreRoute(r,features,service.departure));
+      service.routeList=selectDistinctProfiles(scored);
+      service.selected=service.routeList[service.routeList.length-1].id;
+      state.selectedRoute=service.selected;service.status='success';
+      if(service.routeList.length<3)service.warnings.push(`Only ${service.routeList.length} genuinely different walkable route(s) could be found. Duplicate paths are hidden rather than displayed as separate choices.`);
+      if(!service.routeList[0].daylight)service.warnings.push('The selected departure is after sunset: solar shade is not applicable. Nearby trees/parks are shown as greenery, not measured cooling.');
       if(!(service.sources.trees?.ok||service.sources.shade?.ok))service.warnings.push('No tree or shade observations available. Cool-route ranking cannot be verified.');
       if(Math.abs(dateAtTime(service.departure).getTime()-Date.now())>2*3600000)service.warnings.push('Requested departure is more than two hours away. Current measurements cannot forecast future air temperature; absolute MRT is hidden.');else if(!latestTemperatures(features).length)service.warnings.push('No recent sensor temperature observations; numerical MRT estimates are hidden.');
       for(const kind of ['trees','shade','water','indoor','toilet','accessible','transit','playground','stations'])if(service.sources[kind]?.limited)service.warnings.push(kind+' dataset was partially sampled; nearby counts and model scores may omit records.');
@@ -141,25 +261,31 @@
     }catch(e){service.status='error';service.error=e.name==='AbortError'?'External service timed out. Try again.':e.message;}
     finally{if(job===service.loadingId)render();}
   }
-  function currentRoute(){return service.routeList.find(r=>r.id===state.selectedRoute)||service.routeList[2]||service.routeList[0];}
+  function currentRoute(){return service.routeList.find(r=>r.id===state.selectedRoute)||service.routeList[service.routeList.length-1]||service.routeList[0];}
   function formattedCoords(list){return list.map(p=>p.map(x=>x.toFixed(4)).join(',')).join(';');}
   function options(selected){return positions.map(([name])=>`<option ${name===selected?'selected':''} value="${esc(name)}">${esc(name)}</option>`).join('');}
   function title(s){return `<header class="crr-head"><button type="button" data-crr="back" aria-label="Back">←</button><b>${esc(s)}</b><span></span></header>`;}
   function dataNote(){return `<p class="crr-note">${esc(t('limits'))} <a href="https://open-data.dortmund.de/" target="_blank" rel="noopener">Stadt Dortmund</a> · <a href="https://valhalla.openstreetmap.de/" target="_blank" rel="noopener">Valhalla / OpenStreetMap</a></p>`;}
   const colors={fastest:'#1d72d8',balanced:'#0d9b95',shade:'#087957'};
-  function routeName(id){return id==='shade'?t('shade'):t(id);}
-  function weather(r){return r.avgMrt!==null?`<b>${r.avgMrt.toFixed(1)} °C</b> <small>${esc(t('approx'))} MRT</small>`:`<small>${esc(t('noMrt'))}</small>`;}
-  function compareCard(r){return `<button type="button" data-crr="select" data-id="${r.id}" class="crr-choice ${state.selectedRoute===r.id?'active':''}"><span class="crr-color" style="background:${colors[r.id]}"></span><span><b>${esc(routeName(r.id))}</b><small>${r.km.toFixed(2)} km · ${r.minutes} min</small><small>${esc(t('shadePercent'))}: ${(r.shade*100).toFixed(0)}% <i>(${esc(t('approx'))})</i></small></span><span>›</span></button>`;}
+  function routeName(id){if(id==='shade'){const r=service.routeList.find(x=>x.id==='shade');if(r&&!r.daylight)return l()==='de'?'Grünere Alternative':'Greener alternative';if(r&&!r.hasShadeData)return l()==='de'?'Anderer Fußweg':'Alternative walking route';return l()==='de'?'Schatten-Alternative':'Shade-focused route';}return t(id);}
+  function weather(r){return r.avgMrt!==null?`<b>${r.avgMrt.toFixed(1)} °C</b> <small>${esc(t('approx'))} MRT proxy</small>`:`<small>${esc(t('noMrt'))}</small>`;}
+  function shadeText(r){
+    if(!r.daylight)return esc(l()==='de'?'Nach Sonnenuntergang · Schatten nicht anwendbar':'After sunset · solar shade N/A');
+    if(r.shade===null)return esc(l()==='de'?'Keine ausreichenden Schattendaten':'Shade data unavailable');
+    return `${esc(t('shadePercent'))}: ${(r.shade*100).toFixed(0)}% <i>(${esc(t('approx'))})</i>`;
+  }
+  function greenText(r){return r.greenProximity!==null?`${Math.round(r.greenProximity*100)}% ${esc(l()==='de'?'in Nähe erfasster Grünflächen/Bäume':'near mapped trees / shady places')} (${esc(t('approx'))})`:esc(t('noData'));}
+  function compareCard(r){return `<button type="button" data-crr="select" data-id="${r.id}" class="crr-choice ${state.selectedRoute===r.id?'active':''}"><span class="crr-color" style="background:${colors[r.id]}"></span><span><b>${esc(routeName(r.id))}</b><small>${r.km.toFixed(2)} km · ${r.minutes} min</small><small>${shadeText(r)}</small><small>${greenText(r)}</small></span><span>›</span></button>`;}
   function routeSummary(r){return `<div class="crr-summary"><strong>${r.km.toFixed(2)} km</strong><strong>${r.minutes} min</strong><div>${weather(r)}</div></div>`;}
   function statusBlock(){return service.status==='loading'?`<div class="crr-message crr-loading"><span class="crr-spinner"></span>${esc(t('working'))}</div>`:service.status==='error'?`<div class="crr-message" role="alert">${esc(t('fail'))}<p>${esc(service.error)}</p><button class="crr-main" data-crr="calculate">${esc(t('retry'))}</button></div>`:service.status!=='success'?`<div class="crr-message">${esc(t('selection'))}</div>`:'';}
   function statusWarnings(){return service.warnings.length?`<details class="crr-warnings"><summary>Data limitations (${service.warnings.length})</summary>${service.warnings.map(s=>`<p>${esc(s)}</p>`).join('')}</details>`:'';}
   function liveMapBox(){return `<div class="crr-map-wrap"><div id="crr-live-route-map" class="crr-real-map" aria-label="Mapped walking routes"></div><small class="crr-map-credit">© OpenStreetMap contributors · Routes by Valhalla</small></div>`;}
   function routeScreen(){return `<div class="page crr-page">${title(t('title'))}<div class="crr-scroll"><label class="crr-label">${esc(t('start'))}<select id="crr-start">${options(state.start)}</select></label><label class="crr-label">${esc(t('end'))}<select id="crr-end">${options(state.end)}</select></label><button class="crr-secondary" type="button" data-crr="geostart">⌖ ${esc(t('location'))}</button><label class="crr-label">${esc(t('time'))}<input id="crr-depart" type="time" value="${esc(service.departure||new Date().toTimeString().slice(0,5))}" /></label><div class="crr-setting">${icon('walk',18)} <select id="crr-mode"><option value="Walking" ${service.mobility==='Walking'?'selected':''}>${esc(l()==='en'?'Walking':'Zu Fuß')}</option><option value="Wheelchair" ${service.mobility==='Wheelchair'?'selected':''}>${esc(l()==='en'?'Wheelchair (unverified)':'Rollstuhl (ungeprüft)')}</option></select></div><div class="crr-toggles"><label><input type="checkbox" id="crr-dog" ${service.withDog?'checked':''} /> ${esc(l()==='en'?'With dog':'Mit Hund')}</label><label><input type="checkbox" id="crr-kids" ${service.withKids?'checked':''} /> ${esc(l()==='en'?'With children':'Mit Kindern')}</label></div><p class="crr-mini">${esc(l()==='de'?'Mit Hund oder Kindern: keine verifizierte Wegeignung.':'Dog/kid suitability cannot be certified from these datasets.')}</p><button class="crr-main" type="button" data-crr="calculate">${esc(t('calculate'))} →</button><p class="crr-mini">${esc(t('path'))}. ${esc(l()==='de'?'Die Route wird nicht auf Barrierefreiheit geprüft.':'Accessibility and dog/kid suitability are not verified.')}</p>${dataNote()}</div></div>`;}
-  function resultsScreen(){return `<div class="page crr-page crr-map-page">${title(t('title'))}${service.status==='success'?liveMapBox():''}<div class="crr-sheet"><h2>${esc(t('title'))}</h2>${statusBlock()}${service.status==='success'?`<div class="crr-choices">${service.routeList.map(compareCard).join('')}</div><p class="crr-note">${esc(t('depart'))}: ${esc(service.departure)} · ${service.routeList[0].stations?service.routeList[0].stations+' recent climate sensors':t('noMrt')}</p><p class="crr-note">${esc(l()==='en'?'Departing later may reduce sun exposure. Try changing the departure time to 17:00 and recalculate; this is a model prediction, not a forecast.':'Später starten kann Sonne vermeiden. Teste 17:00 Uhr; das ist nur eine Modellschätzung.')}</p><div class="crr-actions"><button type="button" data-crr="compare" class="crr-secondary">${esc(t('compare'))}</button><button type="button" data-crr="details" class="crr-main">${esc(t('details'))} →</button></div>${statusWarnings()}${dataNote()}`:''}</div></div>`;}
-  function compareScreen(){return `<div class="page crr-page">${title(t('compare'))}<div class="crr-scroll">${service.status==='success'?service.routeList.map(r=>`<section class="crr-panel"><h3>${esc(routeName(r.id))}</h3>${routeSummary(r)}<p>${esc(t('shadePercent'))} <b>${(r.shade*100).toFixed(0)}%</b> <small>(${esc(t('approx'))})</small></p><button data-crr="select-details" data-id="${r.id}" class="crr-main">${esc(t('details'))} →</button></section>`).join(''):statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
+  function resultsScreen(){return `<div class="page crr-page crr-map-page">${title(t('title'))}${service.status==='success'?liveMapBox():''}<div class="crr-sheet"><h2>${esc(t('title'))}</h2>${statusBlock()}${service.status==='success'?`<div class="crr-choices">${service.routeList.map(compareCard).join('')}</div><p class="crr-mini">${esc(l()==='de'?'Jede Karte zeigt einen eigenen, berechneten Fußweg. Gibt es keine weiteren sinnvollen Wege, werden weniger Karten angezeigt.':'Each card represents a different computed walking path. If alternatives cannot be found, fewer cards are shown.')}</p><p class="crr-note">${esc(t('depart'))}: ${esc(service.departure)} · ${service.routeList[0].stations?service.routeList[0].stations+' recent climate sensors':t('noMrt')}</p><div class="crr-time-tester"><span>${esc(l()==='de'?'Andere Startzeit testen':'Try another departure time')}:</span><button type="button" data-crr="time" data-at="13:00">13:00</button><button type="button" data-crr="time" data-at="17:00">17:00</button></div><p class="crr-note">${service.routeList[0].daylight?esc(l()==='de'?'Schatten kann sich im Tagesverlauf ändern. Werte sind Modellschätzungen, keine Vorhersagen.':'Shade can change over the day. Values are model estimates, not forecasts.'):esc(l()==='de'?'Nach Sonnenuntergang keine direkte Sonne. Schattenwerte werden nicht berechnet.':'After sunset there is no direct sunlight, so solar shade is not calculated.')}</p><div class="crr-actions"><button type="button" data-crr="compare" class="crr-secondary">${esc(t('compare'))}</button><button type="button" data-crr="details" class="crr-main">${esc(t('details'))} →</button></div>${statusWarnings()}${dataNote()}`:''}</div></div>`;}
+  function compareScreen(){return `<div class="page crr-page">${title(t('compare'))}<div class="crr-scroll">${service.status==='success'?service.routeList.map(r=>`<section class="crr-panel"><h3>${esc(routeName(r.id))}</h3>${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><button data-crr="select-details" data-id="${r.id}" class="crr-main">${esc(t('details'))} →</button></section>`).join(''):statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
   const amenities={trees:'Trees in dataset',shade:'Shaded places',water:'Drinking fountains',indoor:'Cool indoor places',toilet:'Public toilets',accessible:'Accessible toilets',transit:'Transit stops',playground:'Playgrounds',stations:'Climate sensor stations'};
   function sources(){return DSETS.map(([kind,slug])=>{const info=service.sources[kind]||{ok:false};return `<a href="https://open-data.dortmund.de/explore/dataset/${slug}/" target="_blank" rel="noopener"><span>${esc(slug)}</span><small>${info.ok?info.count+' loaded'+(info.limited?' (capped)':''):'not loaded'}</small></a>`;}).join('');}
-  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}<p>${esc(t('shadePercent'))}: <strong>${(100*r.shade).toFixed(0)}%</strong> <small>${esc(t('approx'))}</small></p><h3>${esc(t('facilities'))}</h3><p class="crr-mini">Counts are visible dataset matches within a corridor along the route, not exhaustive inventories.</p><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}<details class="crr-sources"><summary>${esc(t('methods'))}</summary><div class="crr-dataset-list">${sources()}</div></details>${statusWarnings()}${dataNote()}</div></div>`;}
+  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><h3>${esc(t('facilities'))}</h3><p class="crr-mini">Counts are visible dataset matches within a corridor along the route, not exhaustive inventories.</p><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}<details class="crr-sources"><summary>${esc(t('methods'))}</summary><div class="crr-dataset-list">${sources()}</div></details>${statusWarnings()}${dataNote()}</div></div>`;}
   function navigateScreen(){const r=currentRoute(),steps=r?.maneuvers||[],idx=clamp(service.liveInstruction,0,Math.max(0,steps.length-1));return `<div class="page crr-page crr-map-page">${r?liveMapBox():''}<div class="crr-nav-banner"><b>${esc(t('gps'))} ${service.gpsOn?'●':'○'}</b><p>${esc(steps[idx]?.instruction||t('turns'))}</p><small>${service.gps?`${service.nearestDistance===null?'':Math.round(service.nearestDistance)+' m from route · '}GPS active`:t('preview')}</small></div><div class="crr-sheet crr-nav-sheet"><strong>${r?r.km.toFixed(2)+' km · '+r.minutes+' min':t('unknown')}</strong><div class="crr-actions"><button class="crr-secondary" data-crr="next">${esc(t('next'))} →</button><button class="crr-main" data-crr="end">${esc(t('endNav'))}</button></div><small>${esc(t('limits'))}</small></div></div>`;}
   function arrivedScreen(){return `<div class="page crr-page"><div class="crr-arrived"><div>✓</div><h1>${esc(t('arrived'))}</h1><button class="crr-main" data-crr="end">${esc(t('finish'))}</button></div></div>`;}
   function stopGPS(){if(service.watch!==null){navigator.geolocation?.clearWatch(service.watch);service.watch=null;}service.gpsOn=false;service.gps=null;}
@@ -175,8 +301,8 @@
   function mountRouteMap(){if(!['results','detail','navigation'].includes(state.screen)||service.status!=='success'||!window.L)return;const target=document.getElementById('crr-live-route-map');if(!target)return;
     if(service.leaf){try{service.leaf.map.remove();}catch{}service.leaf=null;}
     const map=L.map(target,{zoomControl:false,attributionControl:true,scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-    const visible=state.screen==='results'?service.routeList:[currentRoute()];const bounds=[];
-    for(const r of visible){if(!r)continue;const opts={color:colors[r.id],weight:r.id===state.selectedRoute?7:4,opacity:r.id===state.selectedRoute?1:.65};L.polyline(r.coords,opts).addTo(map);bounds.push(...r.coords);}
+    const visible=state.screen==='results'?[...service.routeList].sort((a,b)=>(a.id===state.selectedRoute?1:0)-(b.id===state.selectedRoute?1:0)):[currentRoute()];const bounds=[];
+    for(const r of visible){if(!r)continue;const opts={color:colors[r.id],weight:r.id===state.selectedRoute?7:4,opacity:r.id===state.selectedRoute?1:.65};L.polyline(r.coords,opts).on('click',()=>{state.selectedRoute=r.id;render();}).addTo(map);bounds.push(...r.coords);}
     const r=currentRoute();if(r){L.circleMarker(r.coords[0],{radius:7,color:'#fff',weight:2,fillColor:'#167ff2',fillOpacity:1}).addTo(map);L.circleMarker(r.coords[r.coords.length-1],{radius:7,color:'#fff',weight:2,fillColor:'#e14b4c',fillOpacity:1}).addTo(map);}
     if(bounds.length)map.fitBounds(L.latLngBounds(bounds),{padding:[25,25],maxZoom:16});service.leaf={map,gps:null};setTimeout(()=>{if(service.leaf?.map===map)map.invalidateSize();},120);
   }
@@ -188,6 +314,7 @@
     if(action==='back'){if(state.screen==='route')goto('home');else if(state.screen==='results')goto('route');else if(state.screen==='compare')goto('results');else if(state.screen==='detail')goto('results');else goto('detail');}
     if(action==='geostart'){navigator.geolocation?.getCurrentPosition(p=>{service.origin=[p.coords.latitude,p.coords.longitude];const btn=document.querySelector('[data-crr=geostart]');if(btn)btn.textContent='✓ GPS '+p.coords.latitude.toFixed(4)+', '+p.coords.longitude.toFixed(4);},()=>alert(t('gpsFail')),{enableHighAccuracy:true,timeout:13000});}
     if(action==='calculate')calculate();
+    if(action==='time'){service.departure=btn.dataset.at;calculate();}
     if(action==='select'){state.selectedRoute=id;render();}
     if(action==='compare')goto('compare');
     if(action==='details')goto('detail');
@@ -199,5 +326,6 @@
   document.getElementById('app').addEventListener('change',ev=>{if(ev.target.id==='crr-start'){state.start=ev.target.value;service.origin=null;}if(ev.target.id==='crr-end'){state.end=ev.target.value;service.destination=null;}if(ev.target.id==='crr-depart')service.departure=ev.target.value;if(ev.target.id==='crr-mode')service.mobility=ev.target.value;if(ev.target.id==='crr-dog')service.withDog=ev.target.checked;if(ev.target.id==='crr-kids')service.withKids=ev.target.checked;},true);
   window.addEventListener('beforeunload',stopGPS);
   document.querySelectorAll('[data-quick-route]').forEach(el=>el.addEventListener('click',()=>{if(service.status!=='success')setTimeout(()=>goto('route'),0);},true));
+  service.diagnostics={meters,overlap,materiallyDifferent,selectDistinctProfiles,scoreRoute,sunPosition};
   render();
 })();

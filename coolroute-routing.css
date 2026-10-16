@@ -11,3 +11,8 @@
 @media(max-height:680px){.crr-sheet{max-height:64%;padding:9px 12px}.crr-choice{min-height:54px}.crr-map-wrap{min-height:115px}}
 
 .crr-toggles{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;color:#153d52;font-size:13px}.crr-toggles label{display:flex;align-items:center;gap:6px}.crr-toggles input{width:18px;height:18px;accent-color:#0b7f6f}
+
+/* Diverse alternatives, legible evidence labels */
+.crr-choice{min-height:84px;padding:11px 12px}.crr-choice small{line-height:1.35}.crr-choice i{font-style:normal;color:#667c88}.crr-color{width:7px;height:38px}.crr-choice:focus-visible,.crr-main:focus-visible,.crr-secondary:focus-visible{outline:3px solid #167ff2;outline-offset:2px}.crr-scroll .crr-panel p{line-height:1.5}
+
+.crr-time-tester{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0 2px;font-size:11px;color:#466b7c}.crr-time-tester button{border:1px solid #a6d4e0;color:#08628c;background:#effaff;padding:6px 11px;border-radius:20px;font-weight:700;min-height:31px;cursor:pointer}.crr-time-tester button:focus-visible{outline:3px solid #167ff2;outline-offset:2px}

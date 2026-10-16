@@ -1,0 +1,44 @@
+/* Language settings appear only inside Profile. */
+.crl-settings {
+  margin: 22px 0 4px;
+  padding: 0 1px 20px;
+  border-bottom: 1px solid #e4ecf0;
+}
+.crl-settings h3 {
+  margin: 0 0 6px;
+  color: #102f49;
+  font-size: 16px;
+  font-weight: 800;
+}
+.crl-settings .crl-hint {
+  color: #4e6577;
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.crl-settings .crl-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+.crl-settings .crl-options button {
+  min-height: 43px;
+  border: 1px solid #c7dce8;
+  padding: 9px 11px;
+  font-size: 12px;
+  border-radius: 12px;
+  font-weight: 750;
+  color: #17435e;
+  background: white;
+  cursor: pointer;
+}
+.crl-settings .crl-options button.active {
+  background: #102f49;
+  color: #fff;
+  border-color: #102f49;
+}
+.crl-settings .crl-options button:focus-visible {
+  outline: 3px solid #2980c6;
+  outline-offset: 2px;
+}
