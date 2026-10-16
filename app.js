@@ -74,6 +74,7 @@ function screenExplore(){return `<div class="page with-bottom">${head('Explore t
         <button type="button" class="cr-layer-toggle" data-cr-layer="shade" aria-pressed="true">☂ Shade</button>
         <button type="button" class="cr-layer-toggle" data-cr-layer="water" aria-pressed="true">💧 Water</button>
         <button type="button" class="cr-layer-toggle" data-cr-layer="indoor" aria-pressed="true">⌂ Cool indoors</button>
+        <button type="button" class="cr-layer-toggle" data-cr-layer="sensors" aria-pressed="true">🌡 Sensors</button>
       </div>
     </div>
     <div id="cr-map-status" class="cr-map-status" role="status" aria-live="polite">Loading Dortmund places…</div>

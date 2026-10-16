@@ -10,19 +10,25 @@
     trees: { id: 'baumkataster', label: 'Trees', color: '#26875b', icon: '🌳' },
     shade: { id: 'fb60-schattenplatze', label: 'Shade', color: '#0e806b', icon: '☂' },
     water: { id: 'trinkwasserbrunnen', label: 'Water', color: '#1988d1', icon: '💧' },
-    indoor: { id: 'kuhle-innenraume', label: 'Cool indoors', color: '#7855b4', icon: '⌂' }
+    indoor: { id: 'kuhle-innenraume', label: 'Cool indoors', color: '#7855b4', icon: '⌂' },
+    // The companion dataset contains one latest observation per sensor. The
+    // requested klimasensoren-messdaten dataset contains repeated history.
+    sensors: { id: 'klimasensoren-aktuelle-messungen', label: 'Climate sensors', color: '#db713c', icon: '🌡' }
   };
-  const SMALL = ['shade', 'water', 'indoor'];
+  const SMALL = ['shade', 'water', 'indoor', 'sensors'];
+  const SENSOR_REFRESH_MS = 5 * 60 * 1000; // Published measurement cadence; data may be older.
   const TREE_MIN_ZOOM = 16;
   const TREE_LIMIT = 1000; // Prevent a dense viewport from overwhelming a phone.
   const PAGE_SIZE = 100; // Opendatasoft's record-query page size.
 
   let map = null;
   let groups = {};
-  let enabled = { trees: true, shade: true, water: true, indoor: true };
+  let enabled = { trees: true, shade: true, water: true, indoor: true, sensors: true };
   let busy = new Set();
   let errors = new Map();
   let cachedSmall = {};
+  let cachedAt = {};
+  let sensorTimer = null;
   let smallControllers = {};
   let treeController = null;
   let treeRequest = 0;
@@ -48,7 +54,106 @@
     return `https://open-data.dortmund.de/explore/dataset/${DATASETS[key].id}/`;
   }
 
+  function validNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function formatMeasurement(value, digits = 1) {
+    const n = validNumber(value);
+    return n === null ? null : n.toLocaleString('en-GB', {
+      minimumFractionDigits: digits, maximumFractionDigits: digits
+    });
+  }
+
+  function dateLabel(value) {
+    if (!value) return null;
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return null;
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Berlin', day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+    }).format(d);
+  }
+
+  function observationAgeMessage(value) {
+    const age = Date.now() - new Date(value).getTime();
+    if (!Number.isFinite(age)) return 'Measurement time unknown';
+    if (age < -5 * 60 * 1000) return 'Check sensor timestamp';
+    if (age > 3 * 60 * 60 * 1000) return 'Older reading — not current conditions';
+    return 'Latest available reading';
+  }
+
+  function sensorPopup(item) {
+    const readings = Array.isArray(item._readings) ? item._readings : [item];
+    const heading = item.data_station_id || item.body_item_name || 'Climate sensor station';
+    const street = [item.body_item_fields_gerateinformation_strasse,
+      item.body_item_fields_gerateinformation_hausnummer].filter(Boolean).join(' ');
+    const location = [street, item.body_item_fields_gerateinformation_plz,
+      item.body_item_fields_gerateinformation_ort].filter(Boolean).join(', ');
+    const sensorRows = readings.map(measurement => {
+      const model = String(measurement.sensormodell ||
+        measurement.body_item_fields_gerateinformation_geratetyp || 'Unknown model');
+      const globe = /BLG|BLACK.?GLOBE/i.test(model) ||
+        /strahlungstemperatur/i.test(measurement.body_item_fields_gerateinformation_sensorart || '');
+      // Black Globe readings are not directly comparable to ambient air temperature.
+      const rawTemp = measurement.air_temperature ?? measurement.data_air_temperature;
+      const temperature = formatMeasurement(rawTemp);
+      const humidity = formatMeasurement(measurement.data_relative_humidity);
+      const wind = formatMeasurement(measurement.data_wind_speed, 2);
+      const pressure = formatMeasurement(measurement.data_atmospheric_pressure, 1);
+      const solar = formatMeasurement(measurement.data_solar_radiation, 0);
+      const stamp = dateLabel(measurement.measured_at);
+      const details = (temperature !== null ? row(globe ? 'Globe sensor temperature (°C)' : 'Air temperature (°C)', temperature) : '')
+        + (humidity !== null ? row('Relative humidity (%)', humidity) : '')
+        + (wind !== null ? row('Wind speed (m/s)', wind) : '')
+        + (pressure !== null ? row('Air pressure (kPa)', pressure) : '')
+        + (solar !== null ? row('Solar radiation (W/m²)', solar) : '')
+        + row('Device ID', measurement.body_item_name || measurement.device_id)
+        + row('Sensor status', measurement.sensorstatus);
+      return `<div class="cr-sensor-reading">
+        <div class="cr-sensor-model">${html(model)}${stamp ? `<span>${html(stamp)}</span>` : ''}</div>
+        <dl>${details || '<p>No numeric measurements reported by this sensor.</p>'}</dl>
+        <small class="${observationAgeMessage(measurement.measured_at).startsWith('Older') ? 'cr-sensor-stale' : ''}">${html(observationAgeMessage(measurement.measured_at))}</small>
+      </div>`;
+    }).join('');
+    return `<section class="cr-popup-card cr-sensor-popup">
+      <div class="cr-popup-type" style="color:${DATASETS.sensors.color}">Dortmund climate network</div>
+      <h3>Station ${html(heading)}</h3>
+      ${location ? `<p class="cr-sensor-address">${html(location)}</p>` : ''}
+      ${sensorRows}
+      <p class="cr-sensor-disclaimer">Measurements are from individual devices, not a heat-stress index or a forecast. Missing readings are not estimated.</p>
+      <a href="https://open-data.dortmund.de/explore/dataset/klimasensoren-messdaten/" target="_blank" rel="noopener noreferrer">Measurement history ↗</a>
+      <span class="cr-sensor-sep">·</span>
+      <a href="${sourceUrl('sensors')}" target="_blank" rel="noopener noreferrer">Latest measurements ↗</a>
+    </section>`;
+  }
+
+  // Group readings from co-located devices into one marker per station.
+  function groupSensors(rows) {
+    const result = new Map();
+    for (const entry of rows) {
+      const position = coordinate(entry);
+      if (!position) continue;
+      const id = entry.data_station_id ||
+        `${position[0].toFixed(5)},${position[1].toFixed(5)}`;
+      if (!result.has(id)) result.set(id, { ...entry, _readings: [] });
+      const station = result.get(id);
+      station._readings.push(entry);
+      if (new Date(entry.measured_at).getTime() > new Date(station.measured_at).getTime()) {
+        station.measured_at = entry.measured_at;
+      }
+    }
+    for (const station of result.values()) {
+      station._readings.sort((a, b) =>
+        new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime());
+    }
+    return [...result.values()];
+  }
+
   function popupContent(key, item) {
+    if (key === 'sensors') return sensorPopup(item);
     const meta = DATASETS[key];
     let title, details;
     if (key === 'trees') {
@@ -92,7 +197,7 @@
 
   // Dortmund's API supplies [latitude, longitude] in geo_point_2d.
   function coordinate(item) {
-    const p = item.geo_point_2d;
+    const p = item.geo_point_2d ?? item.standort;
     if (Array.isArray(p) && p.length >= 2) {
       const lat = Number(p[0]), lon = Number(p[1]);
       return Number.isFinite(lat) && Number.isFinite(lon) ? [lat, lon] : null;
@@ -108,7 +213,7 @@
     if (!map) return;
     const group = groups[key];
     group.clearLayers();
-    for (const item of rows) {
+    for (const item of key === 'sensors' ? groupSensors(rows) : rows) {
       const position = coordinate(item);
       if (!position) continue;
       const marker = key === 'trees'
@@ -116,11 +221,12 @@
         : L.marker(position, {
             icon: L.divIcon({
               className: 'cr-pin-wrap',
-              html: `<span class="cr-pin" style="--pin-color:${DATASETS[key].color}" aria-hidden="true"><span class="cr-pin-symbol">${DATASETS[key].icon}</span></span>`,
+              html: `<span class="cr-pin ${key === 'sensors' ? 'cr-pin-sensor' : ''}" style="--pin-color:${DATASETS[key].color}" aria-hidden="true"><span class="cr-pin-symbol">${DATASETS[key].icon}</span></span>`,
               iconSize: [28, 34], iconAnchor: [14, 30], popupAnchor: [0, -26]
             })
           });
       marker.bindPopup(() => popupContent(key, item), { maxWidth: 285, minWidth: 200, autoPanPadding: [14, 14] });
+      if (key === 'sensors') marker.bindTooltip(html(item.data_station_id || 'Climate sensor')); 
       group.addLayer(marker);
     }
     refreshStatus();
@@ -181,8 +287,9 @@
     el.title = errors.size ? Array.from(errors.values()).join('\n') : '';
   }
 
-  function addSmallLayer(key) {
-    if (cachedSmall[key]) {
+  function addSmallLayer(key, force = false) {
+    const fresh = key !== 'sensors' || (Date.now() - (cachedAt[key] || 0) < SENSOR_REFRESH_MS);
+    if (!force && cachedSmall[key] && fresh) {
       pointsToLayer(key, cachedSmall[key]);
       return;
     }
@@ -196,6 +303,7 @@
       .then(({ rows }) => {
         if (detached || ctl.signal.aborted) return;
         cachedSmall[key] = rows;
+        cachedAt[key] = Date.now();
         pointsToLayer(key, rows);
       })
       .catch(err => {
@@ -307,6 +415,9 @@
     }
     refreshButtons();
     for (const key of SMALL) if (enabled[key]) addSmallLayer(key);
+    sensorTimer = setInterval(() => {
+      if (map && enabled.sensors && !busy.has('sensors')) addSmallLayer('sensors', true);
+    }, SENSOR_REFRESH_MS);
     map.on('moveend', () => {
       if (moveTimer) clearTimeout(moveTimer);
       moveTimer = setTimeout(() => { if (map) updateTrees(); }, 180);
@@ -320,6 +431,8 @@
     detached = true;
     if (moveTimer) clearTimeout(moveTimer);
     moveTimer = null;
+    if (sensorTimer) clearInterval(sensorTimer);
+    sensorTimer = null;
     if (treeController) treeController.abort();
     treeController = null;
     for (const ctl of Object.values(smallControllers)) ctl.abort();

@@ -27,3 +27,21 @@
 .cr-map-shell .leaflet-popup-content{margin:13px 15px}
 .cr-map-shell .leaflet-popup-content-wrapper{border-radius:15px}
 @media(max-width:410px){.cr-map-layer-panel{right:8px}.cr-layer-toggle{padding:7px 8px;font-size:9px}.cr-map-layer-title{font-size:10px}.cr-map-status{font-size:9px}}
+
+/* Fifth layer: climate measurements. These cards are intentionally scrollable in the phone. */
+.cr-pin-sensor{background:#d66b33}
+.cr-sensor-popup{max-height:310px;overflow-y:auto;overscroll-behavior:contain}
+.cr-sensor-popup .cr-sensor-address{margin:0 0 8px;color:#607780;font-size:11px}
+.cr-sensor-reading{padding:8px 0;border-top:1px solid #e5eceb}
+.cr-sensor-model{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px;font-size:11px;font-weight:850;color:#234b4a;margin-bottom:6px}
+.cr-sensor-model span{font-weight:500;color:#687f80;font-size:10px}
+.cr-sensor-reading dl{display:grid;grid-template-columns:1fr 1fr;column-gap:8px;row-gap:5px;margin-bottom:3px}
+.cr-sensor-reading .cr-popup-row{margin:0}
+.cr-sensor-reading .cr-popup-row dt{font-size:9px}
+.cr-sensor-reading .cr-popup-row dd{font-size:11px;font-weight:700;color:#2d5054;overflow-wrap:anywhere}
+.cr-sensor-reading small{font-size:9px;color:#607b72}
+.cr-sensor-reading .cr-sensor-stale{color:#9b6631;font-weight:750}
+.cr-sensor-popup .cr-sensor-disclaimer{font-size:10px;color:#687b80;margin:10px 0;line-height:1.45}
+.cr-sensor-popup a{font-size:10px;display:inline}
+.cr-sensor-sep{padding:0 4px;color:#b2bdbc}
+@media(max-width:410px){.cr-layer-controls{gap:5px}.cr-layer-toggle{padding:7px 7px}}
