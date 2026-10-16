@@ -1,27 +1,28 @@
-# CoolRoute Dortmund — Interactive Web Prototype
+# CoolRoute · Presentation UI Add-on
 
-This is a front-end-only, clickable product prototype inspired by the supplied CoolRoute mobile-screen reference.
+This is a **design-only add-on** for the existing CoolRoute hackathon prototype. It simplifies the **Home**, **Find a Route**, **Route Results**, **Compare Routes**, **Route Details**, and **Demo Navigation** screens. It follows the navy/blue/green color palette from your supplied design. The first two intro/splash designs are not replaced.
 
-## Start
+## Windows installation
 
-Option 1: Open `CoolRoute_Interactive.html` directly in any modern browser. It is a standalone file with all artwork, CSS, and JavaScript embedded.
+1. Extract the ZIP and put the `coolroute-presentation-addon` folder inside your existing `coolroute-website` folder (alongside index.html).
+2. Open PowerShell, then run:
 
-Option 2: Open `index.html` with the `styles.css`, `app.js`, and `assets/` folder kept together. A local web server works well (`python -m http.server 8000`).
+```powershell
+cd "C:\Users\ASUS1\Downloads\CoolRoute_Website_Source\coolroute-website"
+python .\coolroute-presentation-addon\install_presentation.py .
+python -m http.server 8000
+```
 
-## Interactive features
+3. Open http://localhost:8000/ and press Ctrl+F5 once if you still see the old design.
 
-- Home, splash/onboarding, map, route planner, route alternatives, comparison and details.
-- Origin/destination presets, travel-mode and routing-preference controls, and comfort slider.
-- An illustrative three-route map, map zoom buttons, and map-layer toggles.
-- Step-by-step demo navigation with next/previous controls.
-- Support/undo support for suggested city improvements (stored in browser localStorage).
-- Tips, profile, and settings.
-- Responsive design: centered smartphone on desktop, full mobile viewport on smaller screens.
+If port 8000 is already in use, stop the old local server with Ctrl+C first.
 
-## Important limitations
+## What is (and isn't) changed
 
-**This is a prototype, not a real routing or navigation service.** Road geometries, comfort/shade percentages, metrics, infrastructure counts, weather, and accessibility are illustrative. The map is a stylized SVG illustration, not a georeferenced street map. Do not rely on it for physical travel or heat-safety advice. No API keys, sign-in, external JavaScript libraries, or network access are required.
+The installer creates an `index.html.before-presentation.bak`, copies `presentation-ui.js` and `presentation-theme.css` into your project, and adds two references to `index.html`. It **does not overwrite** `app.js`, `styles.css`, `live-map.js`, `live-map.css`, or any data/asset files. Running it twice does not duplicate the references.
 
-## To make it data-driven
+The Dortmund map data and climate sensors stay as they were. Example weather (32 °C), three demo routes, shade percentages, times, distances, and guidance are still **illustrative**. This is a presentation prototype, **not** a verified live navigation product. The other existing screens (Ideas, Profile, Tips) remain available; their UI is only lightly rethemed.
 
-Replace the demo map with MapLibre GL JS or Leaflet using real map tiles; import Dortmund GeoJSON records for Schattenplätze, Baumkataster, Trinkwasserbrunnen and Kühle Innenräume; use OpenStreetMap with an appropriate pedestrian route engine; calculate real edge weights and accessibility constraints on a backend (e.g., Python + OSMnx + NetworkX). Verify coverage, licensing, and accuracy. Keep real vs inferred metrics separate.
+## Remove the add-on
+
+To revert, restore `index.html.before-presentation.bak` as `index.html`, and optionally delete `presentation-ui.js` and `presentation-theme.css`. Your other app files were not changed.
