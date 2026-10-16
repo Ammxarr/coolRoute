@@ -1,0 +1,65 @@
+/* Three simple, balanced navigation items: Map | Home | Profile. */
+.bottom-nav.cr3-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  justify-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  height: 76px;
+  padding: 5px 10px 14px;
+  background: #ffffff;
+  border-top: 1px solid #e4eaef;
+  gap: 6px;
+}
+.bottom-nav.cr3-tabs .cr3-tab {
+  width: 100%;
+  min-width: 0;
+  height: 56px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: #40596d;
+  font-size: 12px;
+  line-height: 1.15;
+  font-weight: 650;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.bottom-nav.cr3-tabs .cr3-tab svg { width: 23px; height: 23px; }
+.bottom-nav.cr3-tabs .cr3-tab.active {
+  background: #e8f3fb;
+  color: #075387;
+  font-weight: 800;
+}
+.bottom-nav.cr3-tabs .cr3-tab:focus-visible,
+.cr3-profile-link:focus-visible { outline: 3px solid #146fb5; outline-offset: -2px; }
+.cr3-profile-page .scroll-area { overflow-y: auto; }
+.cr3-profile { padding: 18px 15px 25px; color: #102c45; }
+.cr3-profile-banner {
+  display:flex; align-items:center; gap:14px; padding:19px 16px;
+  border:1px solid #d7e7ef; border-radius:18px; background:#f3fafc;
+}
+.cr3-guest-icon {
+  width:52px; height:52px; border-radius:50%; display:grid; place-items:center;
+  background:#ddf0eb; color:#00765c; flex:0 0 auto;
+}
+.cr3-profile-banner h2 { margin:0 0 5px; font-size:19px; font-weight:800; color:#0b2f49; }
+.cr3-profile-banner p { margin:0; font-size:14px; line-height:1.45; color:#385568; }
+.cr3-profile h3 { margin:26px 2px 12px; font-size:16px; font-weight:800; }
+.cr3-profile-links { border:1px solid #dce7ec; border-radius:16px; overflow:hidden; background:white; }
+.cr3-profile-link {
+  display:flex; align-items:center; gap:12px; width:100%; min-height:54px;
+  padding:12px 15px; background:white; border:0; border-bottom:1px solid #edf1f4;
+  color:#10364f; text-align:left; font-size:15px; font-weight:650; cursor:pointer;
+}
+.cr3-profile-link:last-child { border-bottom:0; }
+.cr3-profile-link svg:first-child { flex:none; color:#07806a; }
+.cr3-profile-link span { flex:1; }
+.cr3-profile-link svg:last-child { color:#687d89; }
+.cr3-profile-link:hover { background:#f4fafb; }
+.cr3-profile-note { color:#5f7280; font-size:12px; margin:19px 4px; line-height:1.5; }

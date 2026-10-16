@@ -1,36 +1,27 @@
-# CoolRoute — clean map-first route UI
+# CoolRoute Dortmund — Interactive Web Prototype
 
-A lightweight visual add-on for the existing CoolRoute hackathon prototype.
-Designed to match the **structure and palette** of the supplied reference image: pale map canvas, single blue sample route, floating route controls, white rounded bottom panels, compact blue buttons, and a separate arrival screen.
+This is a front-end-only, clickable product prototype inspired by the supplied CoolRoute mobile-screen reference.
 
-The existing welcome/onboarding screens, original app data files, climate sensors, and five Dortmund Open Data layers are retained.
+## Start
 
-## Install on Windows
+Option 1: Open `CoolRoute_Interactive.html` directly in any modern browser. It is a standalone file with all artwork, CSS, and JavaScript embedded.
 
-1. Extract the ZIP archive.
-2. Copy the `coolroute-clean-map-addon` folder inside your existing `coolroute-website` directory.
-3. In PowerShell:
+Option 2: Open `index.html` with the `styles.css`, `app.js`, and `assets/` folder kept together. A local web server works well (`python -m http.server 8000`).
 
-```powershell
-cd "C:\Users\ASUS1\Downloads\CoolRoute_Website_Source\coolroute-website"
-python .\coolroute-clean-map-addon\install_clean_map.py .
-python -m http.server 8000
-```
+## Interactive features
 
-4. Open `http://localhost:8000/?v=clean-map` and hard-refresh with `Ctrl+F5`.
+- Home, splash/onboarding, map, route planner, route alternatives, comparison and details.
+- Origin/destination presets, travel-mode and routing-preference controls, and comfort slider.
+- An illustrative three-route map, map zoom buttons, and map-layer toggles.
+- Step-by-step demo navigation with next/previous controls.
+- Support/undo support for suggested city improvements (stored in browser localStorage).
+- Tips, profile, and settings.
+- Responsive design: centered smartphone on desktop, full mobile viewport on smaller screens.
 
-If a server is already running on port 8000, use its terminal and press `Ctrl+C` before restarting it.
+## Important limitations
 
-## Demo walkthrough
+**This is a prototype, not a real routing or navigation service.** Road geometries, comfort/shade percentages, metrics, infrastructure counts, weather, and accessibility are illustrative. The map is a stylized SVG illustration, not a georeferenced street map. Do not rely on it for physical travel or heat-safety advice. No API keys, sign-in, external JavaScript libraries, or network access are required.
 
-Home → Find a route → Show routes → select a route → Start demo navigation → Next step (four times) → arrival page → Done.
+## To make it data-driven
 
-The route map, travel times, shade percentages and simulated navigation are examples and are **not** a functional navigation service. The Explore Map tab still uses your Dortmund Open Data sources.
-
-## Files added or replaced
-
-- `presentation-ui.js`, `presentation-theme.css` — previous streamlined screen foundation
-- `clean-map.js`, `clean-map.css` — new reference-inspired route design
-- `index.html` — only extra stylesheet/script tags
-
-Existing core files `app.js`, `styles.css`, `live-map.js`, `live-map.css` remain untouched. Backups are created by the installer. You can remove the new `clean-map.*` references from `index.html` to disable the new route presentation.
+Replace the demo map with MapLibre GL JS or Leaflet using real map tiles; import Dortmund GeoJSON records for Schattenplätze, Baumkataster, Trinkwasserbrunnen and Kühle Innenräume; use OpenStreetMap with an appropriate pedestrian route engine; calculate real edge weights and accessibility constraints on a backend (e.g., Python + OSMnx + NetworkX). Verify coverage, licensing, and accuracy. Keep real vs inferred metrics separate.
