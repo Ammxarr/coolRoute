@@ -1,7 +1,10 @@
 CoolRoute Dortmund
 The navigation app that knows where the shade is.
+
 Cooler paths for a better Dortmund.
+
 CoolRoute Dortmund is a heat-aware, accessibility-conscious walking-route concept created for the DO-DATA-HACKATHON 2026 — Adesso Challenge (16–17 October 2026). It explores a simple idea: the best walking route is not always the shortest one. Depending on the person and the conditions, a better route may offer more shade, places to rest, drinking water, or other useful facilities along the way.
+
 This repository currently contains a clickable front-end prototype for presenting and testing the product experience. The wider project vision is to connect Dortmund's open data with a pedestrian-routing engine and explain why a route is recommended.
 What you can explore in the prototype
 - Onboarding and home screens to introduce the CoolRoute experience.
@@ -12,6 +15,7 @@ What you can explore in the prototype
 - Profile and settings concepts for personal preferences, display options, alerts, and language.
 - Community improvement ideas where users can support or undo support for suggested improvements; demo state is stored in browser localStorage.
 - Responsive layout with a phone-style presentation on desktop and a mobile-sized view on smaller screens.
+
 The pitch envisions personalising routes around needs such as heat sensitivity, walking pace, mobility aids, strollers, rest frequency, drinking water, toilets, benches with backrests, cool indoor spaces, dogs or children, and public transport. The prototype demonstrates parts of this experience; not every preference is connected to a verified routing constraint.
 Run the prototype
 
@@ -49,9 +53,11 @@ Sources and coverage should be rechecked before any live release. Listing a data
 - Dortmund Open Data: https://open-data.dortmund.de/
 - OpenStreetMap: https://www.openstreetmap.org/
 - Valhalla routing engine: https://github.com/valhalla/valhalla
+  
 Accessibility and privacy principles
 CoolRoute aims to support people with different mobility needs and preferences, including wheelchair users, people using a rollator, older adults, and people walking with a stroller. Accessibility data is often incomplete, so unknown information must be shown as unknown rather than interpreted as accessible. Stairs, kerbs, cobblestones, slopes, surfaces, crossings, and public-transport accessibility should only be treated as routing constraints when trustworthy data and supported logic are available.
 The pitch describes profile preferences as stored on the device. In this front-end prototype, profile or demo state may be held in browser storage; this is not a secure account system. Avoid entering sensitive personal or health information into a public demo. Any production version would need a dedicated privacy and security review.
+
 Important limitations
 - This repository is a presentation prototype, not a verified live navigation service.
 - The illustrated map and route lines are not georeferenced street geometry and must not be used for real-world navigation.
@@ -75,6 +81,7 @@ Team
 - Shirin — Concept & Story
 - Ammar — Frontend & Data
 - Preyash — Backend & Data
+
 Acknowledgements
 Created for the DO-DATA-HACKATHON 2026 Adesso Challenge. Where OpenStreetMap data is used in a future or connected version, attribution should follow the applicable OpenStreetMap requirements: © OpenStreetMap contributors.
 CoolRoute Dortmund — Your city. Your comfort. Your way.
