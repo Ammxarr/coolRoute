@@ -241,8 +241,8 @@
     const km=Number(trip.summary.length),minutes=Math.max(1,Math.round(Number(trip.summary.time)/60));
     return Number.isFinite(km)&&km>0&&Number.isFinite(minutes)?{coords,km,minutes,maneuvers}:null;
   }
-  async function getPedRoutes(points, alternatives=0){
-    const body={locations:points.map(([lat,lon],i)=>({lat,lon,type:i===0||i===points.length-1?'break':'through'})),
+  async function getPedRoutes(points, alternatives=0, isWaterStop=false){
+    const body={locations:points.map(([lat,lon],i)=>({lat,lon,type:i===0||i===points.length-1||isWaterStop?'break':'through'})),
       costing:'pedestrian',units:'km',language:l()==='en'?'en-US':'de-DE',
       costing_options:{pedestrian:{walking_speed:5.0}}};
     if(points.length===2&&alternatives)body.alternates=alternatives;
@@ -304,23 +304,106 @@
     if(altCool)selections.push({...altCool,id:'shade'});
     return selections;
   }
+  /* CRW_HARD_WATER_ROUTING_V1 */
+  // Water is a HARD routing requirement. A mere nearby point count does not satisfy it.
+  // Municipal drinking-fountain dataset is queried in full (normally only dozens of points).
+  const CRW_SOURCE_URL='https://open-data.dortmund.de/explore/dataset/trinkwasserbrunnen/';
+  const CRW_MAX_FOUNTAIN_PAGES=5;
+  const CRW_MAX_ROUTING_REQUESTS=8;
+  const CRW_MAX_OFF_ROUTE_METERS=40;
+  let crwCache=null;
+  function crwEnabled(){
+    try{return window.CoolRoutePreferences?.get?.().needsWater===true;}
+    catch{return false;}
+  }
+  function crwText(){return l()==='de'?'Trinkbrunnen-Stopp':l()==='simple'?'Hier gibt es Trinkwasser':'Drinking-water stop';}
+  function crwEscape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  async function crwLoadFountains(){
+    if(crwCache && Date.now()-crwCache.saved<10*60000)return crwCache.rows;
+    const rows=[],seen=new Set();let expected=null,readCount=0;
+    for(let page=0;page<CRW_MAX_FOUNTAIN_PAGES;page++){
+      const url=API+'trinkwasserbrunnen/records?limit=100&offset='+page*100;
+      const json=await fetchJson(url,13000),records=json.results;
+      if(!Array.isArray(records))throw new Error('Dortmund fountain data returned an unexpected response.');
+      readCount+=records.length;
+      if(expected===null && Number.isFinite(Number(json.total_count)))expected=Number(json.total_count);
+      for(const record of records){
+        const pt=locationField(record);
+        if(!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1]) || pt[0]<51.25 || pt[0]>51.7 || pt[1]<7.15 || pt[1]>7.75)continue;
+        if(record.objektart && !/trinkwasserbrunnen|trinkbrunnen/i.test(String(record.objektart)))continue;
+        const key=pt.map(n=>n.toFixed(6)).join(',');if(seen.has(key))continue;seen.add(key);
+        const street=String(record.strasse||'').trim(),detail=String(record.i_zusinfo||'').trim();
+        const label=street ? `Trinkbrunnen – ${street}` : detail ? `Trinkbrunnen – ${detail.slice(0,70)}` : 'Trinkbrunnen';
+        rows.push({at:pt,kind:'water',name:label,id:key,street,detail});
+      }
+      if(records.length<100)break;
+      if(page===CRW_MAX_FOUNTAIN_PAGES-1)
+        throw new Error('The fountain catalogue exceeded the safety limit. Water routing was not calculated using incomplete data.');
+    }
+    if(expected!==null && readCount<expected)throw new Error('The fountain catalogue returned incomplete data. No route will be calculated without the complete listing.');
+    if(!rows.length)throw new Error('No mapped drinking fountains were returned by Dortmund Open Data.');
+    crwCache={saved:Date.now(),rows};return rows;
+  }
+  function crwRouteDistance(route,point){
+    let best=Infinity;for(let k=1;k<route.coords.length;k++){
+      const d=segmentDistance(point,route.coords[k-1],route.coords[k]);if(d<best)best=d;
+    }return best;
+  }
+  function crwCandidates(fountains,from,to,direct){
+    const straight=meters(from,to),maxAirExtra=Math.max(1100,straight*.45);
+    return fountains.map(stop=>{
+      const via=meters(from,stop.at)+meters(stop.at,to);
+      return {...stop,extra:via-straight};
+    }).filter(stop=>stop.extra<=maxAirExtra)
+      .sort((a,b)=>a.extra-b.extra || meters(from,a.at)-meters(from,b.at))
+      .slice(0,CRW_MAX_ROUTING_REQUESTS);
+  }
+  function crwStopMarkup(r){return r?.waterStop?`<p class="crw-confirmation"><span aria-hidden="true">💧</span><span><strong>${crwEscape(crwText())}</strong><small>${crwEscape(r.waterStop.name)} · Stadt Dortmund</small></span></p>`:'';}
+
   async function calculate(){if(service.status==='loading')return;const from=service.origin||names[state.start],to=service.destination||names[state.end];if(!from||!to||meters(from,to)<80){service.status='error';service.error='Choose two distinct Dortmund locations.';goto('results');return;}
     service.departure=document.getElementById('crr-depart')?.value||service.departure||new Date().toTimeString().slice(0,5);
-    service.status='loading';service.routeList=[];service.error='';service.warnings=[];goto('results');const job=++service.loadingId;
+    service.requiresWater=crwEnabled();service.status='loading';service.routeList=[];service.error='';service.warnings=[];goto('results');const job=++service.loadingId;
     try{const distance=meters(from,to);if(distance>10500)throw new Error('For this prototype, select places within approximately 10 km.');
       const directPromise=getPedRoutes([from,to],2).then(routes=>({routes}),error=>({error}));
       const key=from.join(',')+'|'+to.join(',');
       let features;if(service.dataCache?.key===key && Date.now()-service.dataCache.saved<300000){features=service.dataCache.features;service.sources=service.dataCache.sources;}
       else{features=await getEnvironmentalData(from,to);service.dataCache={key,saved:Date.now(),features,sources:service.sources};}
+      if(service.requiresWater){
+        // No partial or silently missing water inventory can satisfy a hard requirement.
+        features.water=await crwLoadFountains();
+        service.sources.water={ok:true,count:features.water.length,limited:false,requirement:true};
+      }
       const directResult=await directPromise;
       if(directResult.error)throw directResult.error;
       const direct=directResult.routes[0];if(job!==service.loadingId)return;service.features=features;
       const possibilities=[];
       function addRoute(route){
+        if(service.requiresWater && !route?.waterStop)return false;
         if(!route||route.km>direct.km*1.65+.15||route.minutes>direct.minutes*1.85+5)return false;
         if(!possibilities.every(prev=>materiallyDifferent(prev,route)))return false;
         possibilities.push(route);return true;
       }
+      if(service.requiresWater){
+        const stops=crwCandidates(features.water,from,to,direct);
+        if(!stops.length)throw new Error('No public drinking fountain is close enough to this journey for a reasonable walking detour. Uncheck Drinking water to search without a stop.');
+        for(const stop of stops){
+          if(job!==service.loadingId)return;
+          try{
+            // Intermediate 'break' yields a real navigable stop and approach directions.
+            const routes=await getPedRoutes([from,stop.at,to],0,true);
+            for(const r of routes){
+              const separation=crwRouteDistance(r,stop.at);
+              if(separation>CRW_MAX_OFF_ROUTE_METERS)continue;
+              r.waterStop={at:stop.at,name:stop.name,id:stop.id,street:stop.street,offsetMeters:Math.round(separation)};
+              addRoute(r);
+            }
+            if(possibilities.length>=3)break;
+            // Respect a shared public routing server.
+            await new Promise(resolve=>setTimeout(resolve,250));
+          }catch(e){service.warnings.push('Fountain route failed: '+e.message);}
+        }
+        if(!possibilities.length)throw new Error('No walking route via a mapped drinking fountain could be calculated within the detour limit. No non-compliant route has been substituted. Try different endpoints or disable Drinking water.');
+      }else{
       addRoute(direct);
       for(const candidate of directResult.routes.slice(1))addRoute(candidate);
       // First prefer actual municipal shaded sites and tree clusters, then try
@@ -337,7 +420,8 @@
           const routes=await getPedRoutes([from,waypoint,to]);
           for(const route of routes)addRoute(route);
         }catch(e){service.warnings.push('A detour was unavailable: '+e.message);}
-      }
+      }      }
+
       // Load uncapped tree coverage for a narrow corridor around ALL candidate paths.
       // This happens after routing so we do not fetch the whole city (or huge endpoint bounding boxes).
       const trees=await loadRouteTrees(possibilities);
@@ -372,7 +456,7 @@
     return `${esc(t('shadePercent'))}: ${(r.shade*100).toFixed(0)}% <i>(${esc(t('approx'))})</i>`;
   }
   function greenText(r){return r.greenProximity!==null?`${Math.round(r.greenProximity*100)}% ${esc(l()==='de'?'in Nähe erfasster Grünflächen/Bäume':'near mapped trees / shady places')} (${esc(t('approx'))})`:esc(t('noData'));}
-  function compareCard(r){return `<button type="button" data-crr="select" data-id="${r.id}" class="crr-choice ${state.selectedRoute===r.id?'active':''}"><span class="crr-color" style="background:${colors[r.id]}"></span><span><b>${esc(routeName(r.id))}</b><small>${r.km.toFixed(2)} km · ${r.minutes} min</small><small>${shadeText(r)}</small><small>${greenText(r)}</small></span><span>›</span></button>`;}
+  function compareCard(r){return `<button type="button" data-crr="select" data-id="${r.id}" class="crr-choice ${state.selectedRoute===r.id?'active':''}"><span class="crr-color" style="background:${colors[r.id]}"></span><span><b>${esc(routeName(r.id))}</b><small>${r.km.toFixed(2)} km · ${r.minutes} min</small><small>${shadeText(r)}</small><small>${greenText(r)}</small>${r.waterStop?`<small class="crw-choice">💧 ${crwEscape(r.waterStop.name)}</small>`:''}</span><span>›</span></button>`;}
   function routeSummary(r){return `<div class="crr-summary"><strong>${r.km.toFixed(2)} km</strong><strong>${r.minutes} min</strong><div>${weather(r)}</div></div>`;}
   function statusBlock(){return service.status==='loading'?`<div class="crr-message crr-loading"><span class="crr-spinner"></span>${esc(t('working'))}</div>`:service.status==='error'?`<div class="crr-message" role="alert">${esc(t('fail'))}<p>${esc(service.error)}</p><button class="crr-main" data-crr="calculate">${esc(t('retry'))}</button></div>`:service.status!=='success'?`<div class="crr-message">${esc(t('selection'))}</div>`:'';}
   function statusWarnings(){return ''; /* Not a scrolling list in route UI. */}
@@ -382,7 +466,7 @@
   function compareScreen(){return `<div class="page crr-page">${title(t('compare'))}<div class="crr-scroll">${service.status==='success'?service.routeList.map(r=>`<section class="crr-panel"><h3>${esc(routeName(r.id))}</h3>${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><button data-crr="select-details" data-id="${r.id}" class="crr-main">${esc(t('details'))} →</button></section>`).join(''):statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
   const amenities={trees:'Trees in dataset',shade:'Shaded places',water:'Drinking fountains',indoor:'Cool indoor places',toilet:'Public toilets',accessible:'Accessible toilets',transit:'Transit stops',playground:'Playgrounds',stations:'Climate sensor stations'};
   function sources(){return DSETS.map(([kind,slug])=>{const info=service.sources[kind]||{ok:false};return `<a href="https://open-data.dortmund.de/explore/dataset/${slug}/" target="_blank" rel="noopener"><span>${esc(slug)}</span><small>${info.ok?info.count+' loaded'+(info.limited?' (capped)':''):'not loaded'}</small></a>`;}).join('');}
-  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><h3>${esc(t('facilities'))}</h3><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
+  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}${crwStopMarkup(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><h3>${esc(t('facilities'))}</h3><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
   function navigateScreen(){const r=currentRoute(),steps=r?.maneuvers||[],idx=clamp(service.liveInstruction,0,Math.max(0,steps.length-1));return `<div class="page crr-page crr-map-page">${r?liveMapBox():''}<div class="crr-nav-banner"><b>${esc(t('gps'))} ${service.gpsOn?'●':'○'}</b><p>${esc(steps[idx]?.instruction||t('turns'))}</p><small>${service.gps?`${service.nearestDistance===null?'':Math.round(service.nearestDistance)+' m from route · '}GPS active`:t('preview')}</small></div><div class="crr-sheet crr-nav-sheet"><strong>${r?r.km.toFixed(2)+' km · '+r.minutes+' min':t('unknown')}</strong><div class="crr-actions"><button class="crr-secondary" data-crr="next">${esc(t('next'))} →</button><button class="crr-main" data-crr="end">${esc(t('endNav'))}</button></div></div></div>`;}
   function arrivedScreen(){return `<div class="page crr-page"><div class="crr-arrived"><div>✓</div><h1>${esc(t('arrived'))}</h1><button class="crr-main" data-crr="end">${esc(t('finish'))}</button></div></div>`;}
   function stopGPS(){if(service.watch!==null){navigator.geolocation?.clearWatch(service.watch);service.watch=null;}service.gpsOn=false;service.gps=null;}
@@ -401,6 +485,11 @@
     const visible=state.screen==='results'?[...service.routeList].sort((a,b)=>(a.id===state.selectedRoute?1:0)-(b.id===state.selectedRoute?1:0)):[currentRoute()];const bounds=[];
     for(const r of visible){if(!r)continue;const opts={color:colors[r.id],weight:r.id===state.selectedRoute?7:4,opacity:r.id===state.selectedRoute?1:.65};L.polyline(r.coords,opts).on('click',()=>{state.selectedRoute=r.id;render();}).addTo(map);bounds.push(...r.coords);}
     const r=currentRoute();if(r){L.circleMarker(r.coords[0],{radius:7,color:'#fff',weight:2,fillColor:'#167ff2',fillOpacity:1}).addTo(map);L.circleMarker(r.coords[r.coords.length-1],{radius:7,color:'#fff',weight:2,fillColor:'#e14b4c',fillOpacity:1}).addTo(map);}
+    if(r?.waterStop){
+      L.circleMarker(r.waterStop.at,{radius:9,color:'#fff',weight:3,fillColor:'#1785c6',fillOpacity:1})
+        .bindPopup('<b>💧 '+crwEscape(crwText())+'</b><p>'+crwEscape(r.waterStop.name)+'</p><a href="'+CRW_SOURCE_URL+'" target="_blank" rel="noopener noreferrer">Stadt Dortmund · Trinkwasserbrunnen</a>')
+        .addTo(map);
+    }
     if(bounds.length)map.fitBounds(L.latLngBounds(bounds),{padding:[25,25],maxZoom:16});service.leaf={map,gps:null};setTimeout(()=>{if(service.leaf?.map===map)map.invalidateSize();},120);
   }
   const previous={route:screenRoute,results:screenResults,compare:screenCompare,detail:screenDetail,navigation:screenNavigation};

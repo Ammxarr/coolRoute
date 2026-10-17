@@ -1,0 +1,4 @@
+.crw-confirmation{display:flex;align-items:center;gap:9px;margin:9px 0 5px;padding:10px 12px;background:#e9f5fc;border:1px solid #c4deef;border-radius:13px;color:#123b54;font-size:13px;line-height:1.4}
+.crw-confirmation span:last-child{display:flex;flex-direction:column;min-width:0;gap:1px}
+.crw-confirmation strong{font-weight:750}.crw-confirmation small{font-size:11px;line-height:1.4;overflow-wrap:anywhere;color:#48647a}
+.crw-choice{display:block;margin-top:3px;color:#0e678e!important;font-weight:650}

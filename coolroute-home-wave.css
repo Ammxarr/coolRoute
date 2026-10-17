@@ -1,0 +1,26 @@
+/* Isolated Home-screen redesign. Does not change routing, maps, Profile or climate requests. */
+.crw-home { color:#092e48; background:#fff; font-family:inherit; overflow:hidden; }
+.crw-home .crw-scroll { height:100%; box-sizing:border-box; overflow:auto; overscroll-behavior:contain; padding:0 0 100px; scrollbar-width:thin; }
+.crw-home .crw-hero { position:relative; height:250px; width:100%; overflow:hidden; isolation:isolate; }
+.crw-home .crw-hero-image { position:absolute; inset:0; background:#ddf3f7 url('dortmund-skyline.svg') center 49% / cover no-repeat; z-index:-1; }
+.crw-home .crw-heading { position:relative; z-index:1; margin:0; padding:37px 19px 0; display:flex; flex-direction:column; gap:0; font:inherit; color:#092b46; font-size:36px; font-weight:900; letter-spacing:-1.4px; line-height:1.09; }
+.crw-home .crw-wave { position:absolute; bottom:-1px; left:0; width:100%; height:43px; pointer-events:none; }
+.crw-home .crw-content { padding:0 18px 60px; }
+.crw-home .crw-weather { min-height:128px; display:grid; grid-template-columns: 56% 44%; align-items:center; gap:0; padding:6px 0 0; }
+.crw-home .crw-temp { font-family:'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif; font-size:51px; font-weight:1000; letter-spacing:-2.5px; line-height:1.08; color:#062d4d; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.crw-home .crw-heat-message { font-size:16px; line-height:1.32; font-weight:800; white-space:pre-line; color:#206c58; margin:0; padding:0 0 0 10px; }
+.crw-home .crw-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; margin:4px 0 0; }
+.crw-home .crw-action { box-sizing:border-box; width:100%; min-width:0; min-height:117px; display:flex; align-items:flex-start; justify-content:center; flex-direction:column; gap:15px; border:none; border-radius:16px; padding:16px 14px; text-align:left; color:#fff; cursor:pointer; font:inherit; font-size:14px; line-height:1.23; font-weight:850; letter-spacing:-.18px; box-shadow:none; transition:filter .12s ease; }
+.crw-home .crw-action-1 {background:#194e6e;} .crw-home .crw-action-2 {background:#286e7a;}
+.crw-home .crw-action-3 {background:#226e5d;} .crw-home .crw-action-4 {background:#397480;}
+.crw-home .crw-action svg {width:30px; height:30px; flex:none; stroke:#fff; }
+.crw-home .crw-action:hover {filter:brightness(1.08);} .crw-home .crw-action:active {filter:brightness(.95);}
+.crw-home .crw-action:focus-visible {outline:3px solid #0b5ca2; outline-offset:3px;}
+.crw-home .crw-climate-source {display:none!important;}
+@media (max-width:370px) {
+ .crw-home .crw-heading {font-size:33px;}
+ .crw-home .crw-temp {font-size:45px;}
+ .crw-home .crw-heat-message {font-size:14px;}
+ .crw-home .crw-action {min-height:111px;font-size:13px;}
+}
+@media (prefers-reduced-motion:reduce){.crw-home .crw-action{transition:none}}
