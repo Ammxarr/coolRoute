@@ -1,0 +1,36 @@
+/* CoolRoute Smooth Navigation. Lightweight layout: no CSS filters on moving map tiles. */
+.crnav-page{position:relative!important;overflow:hidden!important;isolation:isolate;background:#ecf2ed!important;color:#133750}
+.crnav-page .crnav-map-wrap{position:absolute!important;inset:0!important;z-index:0!important;min-height:0!important;border:0!important;flex:unset!important}
+.crnav-page #crr-live-route-map{height:100%!important;width:100%!important}
+.crnav-page .leaflet-container{background:#edf1ed;touch-action:auto}
+.crnav-page .leaflet-tile-pane{filter:none!important;will-change:auto!important}
+.crnav-page .leaflet-control-attribution{font-size:8px!important;background:#ffffffc9!important}
+.crnav-instruction{position:absolute;z-index:670;top:62px;left:12px;right:12px;pointer-events:none}
+.crnav-page .crr-nav-banner{position:relative;inset:auto!important;display:flex;align-items:center;gap:12px;min-height:76px;padding:13px 14px;border:0;border-radius:14px;background:#105b87;color:white;box-shadow:0 5px 16px #173e5333;pointer-events:auto}
+.crnav-turn-icon{font-size:47px;font-weight:800;line-height:1;flex:0 0 46px;text-align:center}
+.crnav-turn-content{min-width:0;flex:1}.crnav-next-distance{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.12;color:white}
+.crnav-page .crr-nav-banner p{margin:3px 0 0;font-size:13px;font-weight:570;line-height:1.35;color:white}
+.crnav-facility-control{position:absolute;top:152px;left:12px;right:60px;z-index:665;display:flex;align-items:flex-start;gap:7px;flex-direction:column;pointer-events:none}
+.crnav-places-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:8px 13px;background:#fffffff5;color:#165271;border:1px solid #d7e5ea;border-radius:20px;font-size:12px;font-weight:750;box-shadow:0 2px 10px #14394a20;cursor:pointer}
+.crnav-places-panel{pointer-events:auto;display:flex;flex-wrap:wrap;gap:7px;max-width:100%;padding:9px;background:#ffffffed;box-shadow:0 2px 13px #18495722;border-radius:12px}
+.crnav-places-panel[hidden],.crnav-offroute[hidden],.crnav-nearby[hidden]{display:none!important}
+.crnav-filter{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:7px 10px;background:#f4f8fa;color:#31566a;border:1px solid #d3e2e9;border-radius:18px;font-size:11px;font-weight:650;cursor:pointer}
+.crnav-filter.on{background:#e1f3ee;border-color:#209b79;color:#075943}
+.crnav-recenter{position:absolute;right:12px;bottom:153px;z-index:665;width:46px;height:46px;border:1px solid #d4e0e8;border-radius:50%;background:#fff;color:#176ea4;box-shadow:0 3px 12px #12354b2d;font-size:28px;cursor:pointer}
+.crnav-recenter.paused{color:#d0773c;border-color:#eabf9d}
+.crnav-offroute{position:absolute;bottom:152px;left:12px;right:70px;z-index:666;display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:white;border-radius:12px;border:1px solid #eacda8;box-shadow:0 3px 9px #102f4525;padding:10px;font-size:11px;font-weight:600;color:#865a2b}
+.crnav-offroute button{border:0;border-radius:8px;background:#115f89;color:#fff;padding:8px 10px;min-height:36px;font-weight:700;font-size:11px;cursor:pointer}
+.crnav-page .crnav-bottom{position:absolute!important;left:0;right:0;bottom:0;z-index:665;overflow:visible!important;max-height:none!important;padding:15px 16px 19px;border-radius:17px 17px 0 0;background:white;box-shadow:0 -3px 17px #23425522}
+.crnav-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.crnav-remaining{display:flex;flex-direction:column;gap:4px}.crnav-remaining strong{font-size:25px;line-height:1;font-weight:800;color:#133e5a;font-variant-numeric:tabular-nums}
+.crnav-distance{font-size:12px;color:#546b77}.crnav-end{padding:11px 20px;min-height:43px;border:0;border-radius:10px;background:#e64b51;color:#fff;font-size:13px;font-weight:750;cursor:pointer}
+.crnav-summary{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-size:11px;font-weight:650;color:#14775a}
+.crnav-gps-status{font-weight:500;color:#6c818b}.crnav-preview{margin-top:8px;border:1px solid #bfdce9;border-radius:8px;background:#eff7fd;padding:8px;color:#205977;font-weight:600;font-size:11px}
+.crnav-location-marker{background:transparent;border:0}.crnav-location-pulse{display:grid;place-items:center;width:28px;height:28px;background:#1685ed2e;border-radius:50%}
+.crnav-location-dot{width:13px;height:13px;border:2.5px solid white;border-radius:50%;background:#137fe8;box-shadow:0 1px 6px #103c6e73}
+.crnav-point-wrap{background:none;border:0}.crnav-point{width:28px;height:28px;display:flex;align-items:center;justify-content:center;gap:1px;border-radius:14px;background:#fff;color:var(--point);font-size:16px;font-weight:850;border:1.5px solid var(--point);box-shadow:0 2px 6px #183c4d38}
+.crnav-point small{font-size:9px}.crnav-page button:focus-visible{outline:3px solid #1984d5;outline-offset:3px}
+@media(max-height:720px){.crnav-instruction{top:54px}.crnav-page .crr-nav-banner{min-height:66px;padding:9px 12px}.crnav-facility-control{top:133px}.crnav-recenter,.crnav-offroute{bottom:136px}.crnav-page .crnav-bottom{padding:11px 14px 14px}}
+@media(prefers-reduced-motion:reduce){.crnav-page *, .crnav-page *::before,.crnav-page *::after{transition-duration:0s!important;animation-duration:0s!important}}
+
+.crnav-nearby{pointer-events:none;display:inline-block;border:1px solid #a7d8c1;background:#f4fff9ee;color:#176d52;border-radius:13px;padding:6px 10px;font-size:11px;font-weight:650;box-shadow:0 2px 6px #153a2d16}

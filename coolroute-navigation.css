@@ -1,36 +1,24 @@
-/* CoolRoute Smooth Navigation. Lightweight layout: no CSS filters on moving map tiles. */
-.crnav-page{position:relative!important;overflow:hidden!important;isolation:isolate;background:#ecf2ed!important;color:#133750}
-.crnav-page .crnav-map-wrap{position:absolute!important;inset:0!important;z-index:0!important;min-height:0!important;border:0!important;flex:unset!important}
-.crnav-page #crr-live-route-map{height:100%!important;width:100%!important}
-.crnav-page .leaflet-container{background:#edf1ed;touch-action:auto}
-.crnav-page .leaflet-tile-pane{filter:none!important;will-change:auto!important}
-.crnav-page .leaflet-control-attribution{font-size:8px!important;background:#ffffffc9!important}
-.crnav-instruction{position:absolute;z-index:670;top:62px;left:12px;right:12px;pointer-events:none}
-.crnav-page .crr-nav-banner{position:relative;inset:auto!important;display:flex;align-items:center;gap:12px;min-height:76px;padding:13px 14px;border:0;border-radius:14px;background:#105b87;color:white;box-shadow:0 5px 16px #173e5333;pointer-events:auto}
-.crnav-turn-icon{font-size:47px;font-weight:800;line-height:1;flex:0 0 46px;text-align:center}
-.crnav-turn-content{min-width:0;flex:1}.crnav-next-distance{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.12;color:white}
-.crnav-page .crr-nav-banner p{margin:3px 0 0;font-size:13px;font-weight:570;line-height:1.35;color:white}
-.crnav-facility-control{position:absolute;top:152px;left:12px;right:60px;z-index:665;display:flex;align-items:flex-start;gap:7px;flex-direction:column;pointer-events:none}
-.crnav-places-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:8px 13px;background:#fffffff5;color:#165271;border:1px solid #d7e5ea;border-radius:20px;font-size:12px;font-weight:750;box-shadow:0 2px 10px #14394a20;cursor:pointer}
-.crnav-places-panel{pointer-events:auto;display:flex;flex-wrap:wrap;gap:7px;max-width:100%;padding:9px;background:#ffffffed;box-shadow:0 2px 13px #18495722;border-radius:12px}
-.crnav-places-panel[hidden],.crnav-offroute[hidden],.crnav-nearby[hidden]{display:none!important}
-.crnav-filter{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:7px 10px;background:#f4f8fa;color:#31566a;border:1px solid #d3e2e9;border-radius:18px;font-size:11px;font-weight:650;cursor:pointer}
-.crnav-filter.on{background:#e1f3ee;border-color:#209b79;color:#075943}
-.crnav-recenter{position:absolute;right:12px;bottom:153px;z-index:665;width:46px;height:46px;border:1px solid #d4e0e8;border-radius:50%;background:#fff;color:#176ea4;box-shadow:0 3px 12px #12354b2d;font-size:28px;cursor:pointer}
-.crnav-recenter.paused{color:#d0773c;border-color:#eabf9d}
-.crnav-offroute{position:absolute;bottom:152px;left:12px;right:70px;z-index:666;display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:white;border-radius:12px;border:1px solid #eacda8;box-shadow:0 3px 9px #102f4525;padding:10px;font-size:11px;font-weight:600;color:#865a2b}
-.crnav-offroute button{border:0;border-radius:8px;background:#115f89;color:#fff;padding:8px 10px;min-height:36px;font-weight:700;font-size:11px;cursor:pointer}
-.crnav-page .crnav-bottom{position:absolute!important;left:0;right:0;bottom:0;z-index:665;overflow:visible!important;max-height:none!important;padding:15px 16px 19px;border-radius:17px 17px 0 0;background:white;box-shadow:0 -3px 17px #23425522}
-.crnav-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.crnav-remaining{display:flex;flex-direction:column;gap:4px}.crnav-remaining strong{font-size:25px;line-height:1;font-weight:800;color:#133e5a;font-variant-numeric:tabular-nums}
-.crnav-distance{font-size:12px;color:#546b77}.crnav-end{padding:11px 20px;min-height:43px;border:0;border-radius:10px;background:#e64b51;color:#fff;font-size:13px;font-weight:750;cursor:pointer}
-.crnav-summary{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-size:11px;font-weight:650;color:#14775a}
-.crnav-gps-status{font-weight:500;color:#6c818b}.crnav-preview{margin-top:8px;border:1px solid #bfdce9;border-radius:8px;background:#eff7fd;padding:8px;color:#205977;font-weight:600;font-size:11px}
-.crnav-location-marker{background:transparent;border:0}.crnav-location-pulse{display:grid;place-items:center;width:28px;height:28px;background:#1685ed2e;border-radius:50%}
-.crnav-location-dot{width:13px;height:13px;border:2.5px solid white;border-radius:50%;background:#137fe8;box-shadow:0 1px 6px #103c6e73}
-.crnav-point-wrap{background:none;border:0}.crnav-point{width:28px;height:28px;display:flex;align-items:center;justify-content:center;gap:1px;border-radius:14px;background:#fff;color:var(--point);font-size:16px;font-weight:850;border:1.5px solid var(--point);box-shadow:0 2px 6px #183c4d38}
-.crnav-point small{font-size:9px}.crnav-page button:focus-visible{outline:3px solid #1984d5;outline-offset:3px}
-@media(max-height:720px){.crnav-instruction{top:54px}.crnav-page .crr-nav-banner{min-height:66px;padding:9px 12px}.crnav-facility-control{top:133px}.crnav-recenter,.crnav-offroute{bottom:136px}.crnav-page .crnav-bottom{padding:11px 14px 14px}}
-@media(prefers-reduced-motion:reduce){.crnav-page *, .crnav-page *::before,.crnav-page *::after{transition-duration:0s!important;animation-duration:0s!important}}
-
-.crnav-nearby{pointer-events:none;display:inline-block;border:1px solid #a7d8c1;background:#f4fff9ee;color:#176d52;border-radius:13px;padding:6px 10px;font-size:11px;font-weight:650;box-shadow:0 2px 6px #153a2d16}
+/* Adapted from the supplied navigation3d.css. Scoped entirely to the navigation page. */
+.cr3d-page{position:relative!important;isolation:isolate;overflow:hidden!important;background:#e8efec!important;color:#153147!important;height:100%;min-height:0!important;padding:0!important}
+.cr3d-page .cr3d-map{position:absolute;inset:0;z-index:0;background:#e5eeeb}
+.cr3d-map .maplibregl-map,.cr3d-map .leaflet-container{width:100%;height:100%}
+.cr3d-header{position:absolute;top:54px;left:12px;right:12px;display:flex;gap:9px;align-items:center;z-index:5;pointer-events:none}
+.cr3d-header>*{pointer-events:auto}
+.cr3d-round{display:grid;place-items:center;min-width:42px;width:42px;height:42px;padding:0;background:#fff;color:#164466;border:1px solid #dbe6ea;border-radius:50%;box-shadow:0 2px 9px #102f4824;font-weight:700;font-size:16px;cursor:pointer}
+.cr3d-mode{flex:1;text-align:center;border:1px solid #dbe6ea;border-radius:18px;background:#fffffff0;color:#375262;font-size:12px;font-weight:700;padding:9px}
+.cr3d-direction{position:absolute;top:107px;left:12px;right:12px;z-index:6;background:#195c83;color:white;border-radius:14px;padding:15px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 3px 10px #10324824}
+.cr3d-arrow{font-size:42px;font-weight:800;min-width:44px;line-height:1;text-align:center}.cr3d-direction strong{font-size:22px;font-weight:800;display:block;line-height:1.1}.cr3d-direction p{margin:3px 0 0;font-size:14px;font-weight:650;line-height:1.35;color:#fff}
+.cr3d-controls{position:absolute;right:12px;top:213px;z-index:6;display:grid;gap:8px}.cr3d-controls .cr3d-round{width:39px;height:39px;min-width:39px;font-size:15px}
+.cr3d-place-controls{position:absolute;left:12px;right:65px;top:213px;z-index:6;pointer-events:none}.cr3d-place-controls>*{pointer-events:auto}
+.cr3d-place-toggle{background:#fff;color:#184663;border:1px solid #d6e2e7;min-height:41px;border-radius:24px;padding:9px 13px;font-size:12px;font-weight:750;box-shadow:0 2px 8px #102f481c}
+.cr3d-place-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px;background:#fff;border:1px solid #dbe6ea;border-radius:12px;padding:8px;max-width:240px}.cr3d-place-list[hidden],.cr3d-offroute[hidden],.cr3d-preview-actions[hidden]{display:none!important}.cr3d-place-list button{background:#edf6f2;border:1px solid #d0e4db;color:#195641;padding:8px 5px;border-radius:9px;min-height:40px;font-size:12px}.cr3d-place-list button[aria-pressed=false]{background:#f5f6f6;color:#62727a}
+.cr3d-offroute{position:absolute;left:12px;right:12px;bottom:155px;z-index:7;display:flex;gap:9px;align-items:center;justify-content:space-between;background:#fff6e8;border:1px solid #e6c9aa;border-radius:12px;padding:10px;font-size:12px;color:#734a28}.cr3d-offroute button{border:0;color:white;background:#195c83;border-radius:8px;padding:9px;font-weight:650;font-size:11px}
+.cr3d-bottom{position:absolute;bottom:0;left:0;right:0;z-index:6;background:#fffffffa;border-radius:20px 20px 0 0;border:1px solid #dce6e7;box-shadow:0 -3px 18px #143f5424;padding:19px 18px 25px}
+.cr3d-summary{display:flex;justify-content:space-between;align-items:center;gap:10px}.cr3d-summary strong{font-size:26px;font-weight:850;color:#153b56;font-variant-numeric:tabular-nums}.cr3d-summary p{margin:5px 0 0;font-size:13px;color:#496270}.cr3d-summary small{display:block;margin-top:6px;color:#59717b;font-size:11px;line-height:1.3}.cr3d-end{background:#e94a50;color:#fff;padding:12px 18px;min-height:48px;border:0;border-radius:11px;font-size:14px;font-weight:800}
+.cr3d-preview-actions{display:flex;gap:6px;margin-top:12px}.cr3d-preview-actions button{flex:1;min-height:42px;background:#eff5f6;border:1px solid #d6e1e5;border-radius:9px;color:#145171;font-size:11px;font-weight:700;padding:7px}.cr3d-preview-actions button.cr3d-start{background:#195c83;color:#fff;border-color:#195c83}
+.cr3d-location{width:22px;height:22px;border-radius:50%;background:#167bdb;border:4px solid white;box-shadow:0 0 0 9px #167bdb30,0 2px 7px #183b5566}
+.cr3d-fallback-label{position:absolute;left:12px;bottom:180px;background:#fffe;border:1px solid #dbe6ea;border-radius:12px;padding:5px 9px;font-size:11px;color:#53676e;z-index:5}
+.cr3d-empty{padding:65px 22px;line-height:1.5}.cr3d-empty button{background:#195c83;color:white;border:none;border-radius:9px;padding:11px}
+.cr3d-page button:focus-visible{outline:3px solid #2e98d4;outline-offset:3px}
+@media(max-height:690px){.cr3d-header{top:48px}.cr3d-direction{top:99px;padding:11px}.cr3d-controls,.cr3d-place-controls{top:191px}.cr3d-bottom{padding:12px 12px 14px}.cr3d-summary strong{font-size:21px}}
+@media(prefers-reduced-motion:reduce){.cr3d-page *{animation:none!important;transition:none!important}}

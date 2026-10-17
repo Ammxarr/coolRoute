@@ -1,0 +1,158 @@
+/* Fixed palette refresh for CoolRoute.
+   Palette: #95E913 #549E06 #C6F486 #542C3C #94FAFF #001054
+   This file only overrides presentation. No routing logic or data access is changed. */
+
+:root{
+  --ink:#001054;
+  --ink2:#542C3C;
+  --muted:#5c6280;
+  --blue:#001054;
+  --blue-bright:#94FAFF;
+  --green:#95E913;
+  --green-deep:#549E06;
+  --mint:#edf9d4;
+  --cream:#f8fcf2;
+  --paper:#ffffff;
+  --border:#d7e8cc;
+  --shadow:0 10px 28px rgba(0,16,84,.10);
+}
+
+body{
+  background:#f3f8ee;
+  background-image:radial-gradient(ellipse at 21% 12%, rgba(198,244,134,.42) 0, transparent 28%),
+                   radial-gradient(ellipse at 78% 84%, rgba(148,250,255,.34) 0, transparent 28%);
+}
+
+button:focus-visible,input:focus-visible,select:focus-visible{
+  outline:3px solid rgba(148,250,255,.95);
+}
+
+.bottom-nav{
+  border-top:1px solid #e5eee0;
+  background:#fff;
+}
+.bottom-nav button{color:#4f5a77;}
+.bottom-nav button.active{
+  color:#001054;
+  background:#eef8d7;
+}
+
+.head-more:hover,.head-back:hover{background:#f2f7ea;}
+.profile-avatar{background:#eef8d7;color:#001054;}
+.profile-icon{background:#eef8d7;color:#549E06;}
+.layer-chip.selected,
+.filter-tab.active,
+.suggestion-chip.active,
+.lang-pill.active,
+.ideas-switch button.active{
+  background:#549E06 !important;
+  border-color:#549E06 !important;
+  color:#fff !important;
+}
+
+.outside-button.primary,
+.intro-footer button,
+.cta,
+.primary-btn,
+.route-primary,
+.compare-btn,
+.crr-main,
+.nav-start,
+button[data-crr="calculate"],
+button[data-action="start-navigation"],
+button[data-action="route-details"]{
+  background:#001054 !important;
+  color:#fff !important;
+  box-shadow:none !important;
+}
+
+.outside-button.secondary,
+.secondary-btn,
+.route-secondary,
+button[data-action="compare-routes"]{
+  background:#eef8d7 !important;
+  border:1px solid #d7e8cc !important;
+  color:#001054 !important;
+}
+
+.toggle.on{background:#549E06 !important;}
+.setting-chip.active,
+.option-chip.active,
+.choice-chip.active{
+  background:#549E06 !important;
+  border-color:#549E06 !important;
+  color:#fff !important;
+}
+
+.crw-home{color:#001054;background:#fff;}
+.crw-home .crw-heading{color:#001054;}
+.crw-home .crw-temp{color:#001054;}
+.crw-home .crw-heat-message{color:#542C3C;}
+.crw-home .crw-action{box-shadow:none;}
+.crw-home .crw-action-1{background:#001054;color:#fff;}
+.crw-home .crw-action-2{background:#542C3C;color:#fff;}
+.crw-home .crw-action-3{background:#549E06;color:#fff;}
+.crw-home .crw-action-4{background:#94FAFF;color:#001054;}
+.crw-home .crw-action-4 svg{stroke:#001054;}
+.crw-home .crw-action:hover{filter:brightness(1.04);}
+.crw-home .crw-action:active{filter:brightness(.98);}
+
+.home-card,
+.route-card,
+.side-route,
+.weather-card,
+.profile-card,
+.settings-panel,
+.preference-card,
+.idea-card,
+.tip-card,
+.info-card,
+.cool-place-card,
+.nearby-card,
+.crr-card,
+.crr-route-card,
+.crr-facility-card,
+.route-summary,
+.route-needs,
+.route-box,
+.card{
+  border-color:#dde8d7 !important;
+  box-shadow:none !important;
+}
+
+.route-card.selected,
+.crr-route-card.selected,
+.route-box.selected,
+.card.selected{
+  border-color:#549E06 !important;
+  box-shadow:0 0 0 1px #549E06 inset !important;
+}
+
+.side-route-icon.fast{background:#e8f3ff;color:#001054;}
+.side-route-icon.balanced{background:#eef8d7;color:#549E06;}
+.side-route-icon.shade{background:#94FAFF;color:#001054;}
+.note-icon{border-color:#549E06;color:#549E06;}
+.side-note{background:#f3f9ec;color:#4f5a67;}
+.side-note b{color:#001054;}
+.overline,.keyboard-tip{color:#549E06;}
+.pitch-line{background:#95E913;}
+.brand,.screen-head,.scroll-area>h2,.home-title,.settings-title,.profile-card b{color:#001054;}
+.brand-mark{color:#549E06;}
+
+.temp-reading,
+.current-temp,
+.weather-temp,
+.big-temp,
+.hero-temp{
+  color:#001054 !important;
+}
+.heat-alert,
+.warning-text,
+.status-hot{
+  color:#542C3C !important;
+}
+.status-ok,
+.status-good,
+.success-text{color:#549E06 !important;}
+
+a{color:#001054;}
