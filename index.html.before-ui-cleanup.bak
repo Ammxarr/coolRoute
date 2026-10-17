@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#eff5f3" />
+  <meta name="description" content="CoolRoute Dortmund — an interactive concept prototype for comfortable city walking." />
+  <title>CoolRoute Dortmund · Interactive Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="live-map.css" />
+  <link rel="stylesheet" href="presentation-theme.css" />
+  <link rel="stylesheet" href="clean-map.css" />
+  <link rel="stylesheet" href="hackathon-ui.css" />
+  <link rel="stylesheet" href="coolroute-routing.css" />
+
+  <link rel="stylesheet" href="coolroute-three-tabs.css" />
+  <link rel="stylesheet" href="language-profile.css" />
+  <link rel="stylesheet" href="coolroute-navigation.css" />
+  <link rel="stylesheet" href="coolroute-skyline-home.css" />
+  <link rel="stylesheet" href="coolroute-preferences.css" />
+  <link rel="stylesheet" href="coolroute-data-refinement.css" />
+  
+</head>
+<body>
+  <div class="desktop-shell">
+    <aside class="side-panel side-left">
+      <div class="mini-brand"><span class="brand-symbol">✦</span> COOLROUTE <span class="tiny-dot">/</span> DORTMUND</div>
+      <div class="pitch-line"></div>
+      <div class="overline">INTERACTIVE PRODUCT PROTOTYPE</div>
+      <h1>Cooler routes.<br/><em>Better days.</em></h1>
+      <p>Explore a city that adapts to you. Choose a route, compare shade and comfort, then try a guided journey through Dortmund.</p>
+      <div class="left-actions">
+        <button id="openRouteOutside" class="outside-button primary">Try route planner <span>↗</span></button>
+        <button id="resetDemoOutside" class="outside-button secondary">Restart experience ↺</button>
+      </div>
+      <div class="rail-caption"><span class="rail-dot"></span> Designed for the CoolRoute hackathon</div>
+    </aside>
+
+    <main class="phone-stage" aria-label="Interactive CoolRoute app demo">
+      <div class="phone-shadow"></div>
+      <div class="phone">
+        <div class="phone-glass">
+          <div class="system-status"><span>9:41</span><div class="dynamic-island" aria-hidden="true"></div><span class="system-icons" aria-label="Cellular, Wi-Fi and battery">▂▃▅ <svg width="17" height="13" viewBox="0 0 20 14"><path d="M2 5Q10-1 18 5M5 8Q10 4 15 8M8 11Q10 9 12 11" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> <span class="battery"></span></span></div>
+          <div id="app" class="phone-app" aria-live="polite"></div>
+          <div class="home-indicator" aria-hidden="true"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <aside class="side-panel side-right">
+      <div class="overline">EXPLORE THE EXPERIENCE</div>
+      <h2>One city.<br/>Three ways through.</h2>
+      <div class="side-routes">
+        <button data-quick-route="fastest" class="side-route"><span class="side-route-icon fast">↗</span><span><b>Fastest</b><small>Save a little time</small></span><span class="chevron">›</span></button>
+        <button data-quick-route="balanced" class="side-route"><span class="side-route-icon balanced">❧</span><span><b>Balanced</b><small>Walk the pleasant way</small></span><span class="chevron">›</span></button>
+        <button data-quick-route="shade" class="side-route"><span class="side-route-icon shade">♣</span><span><b>More shade</b><small>Follow the cooler streets</small></span><span class="chevron">›</span></button>
+      </div>
+      <div class="side-note"><div class="note-icon">i</div><div><b>Prototype data</b><br/>Pedestrian routes use OpenStreetMap/Valhalla; heat scores are experimental model estimates. Accessibility is not verified.</div></div>
+      <div class="keyboard-tip">TIP <span>Use the phone controls to explore every screen.</span></div>
+    </aside>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="live-map.js"></script>
+  <script src="app.js"></script>
+  <script src="presentation-ui.js"></script>
+  <script src="clean-map.js"></script>
+  
+  
+  <script src="hackathon-ui.js"></script>
+  <script src="coolroute-routing.js"></script>
+
+  <script src="coolroute-three-tabs.js"></script>
+  <script src="language-profile.js"></script>
+  <script src="coolroute-navigation.js"></script>
+  <script src="coolroute-skyline-home.js"></script>
+  <script src="coolroute-preferences.js"></script>
+  <script src="coolroute-data-refinement.js" data-build="cr-data-refinement-installed"></script>
+  
+</body>
+</html>

@@ -1,0 +1,154 @@
+/* CoolRoute – accessibility-first preferences and onboarding.
+   Presentation layer loaded after app/routing/add-ons. No changes to the heat model.
+   Data stored only in the browser's localStorage; no account or medical profiling. */
+(() => {
+  'use strict';
+  if (window.CoolRoutePreferencesInstalled) return;
+  if (typeof screenProfile !== 'function' || typeof render !== 'function' || typeof page !== 'function' ||
+      !document.querySelector('#app')) { console.warn('CoolRoute Preferences: load after CoolRoute app.'); return; }
+  window.CoolRoutePreferencesInstalled = true;
+  const STORE='coolroute-user-preferences-v1', READY='coolroute-onboarded-v1';
+  const defaults={mobility:'foot',heat:'moderate',pace:'normal',breaks:'15',backrest:false,
+    avoidStairs:false,avoidCobblestones:false,needsToilet:false,needsWater:true,needsBaby:false,
+    withDog:false,withKids:false,transit:false,
+    textSize:'normal',highContrast:false,darkMode:false,reduceMotion:false,readAloud:false,
+    heatThreshold:30,showCool:true,saved:{home:'',doctor:'',pharmacy:'',supermarket:''}};
+  const choices={
+    mobility:[['foot','On foot','Zu Fuß','Zu Fuß'],['stick','Walking stick','Gehstock','Mit Gehstock'],
+      ['rollator','Rollator','Rollator','Mit Rollator'],['wheelchair','Wheelchair','Rollstuhl','Mit Rollstuhl'],
+      ['stroller','Stroller','Kinderwagen','Mit Kinderwagen']],
+    heat:[['well','I tolerate heat well','Ich vertrage Hitze gut','Hitze ist für mich okay'],
+      ['moderate','Moderately','Mittelmäßig','Hitze ist manchmal schwierig'],
+      ['poor','Poorly','Ich vertrage Hitze schlecht','Hitze ist schwer für mich']],
+    pace:[['relaxed','Relaxed','Gemütlich','Langsam'],['normal','Normal','Normal','Normal'],['brisk','Brisk','Zügig','Schnell']],
+    breaks:[['0','None','Keine','Keine'],['10','Every 10 min','Alle 10 Minuten','Alle 10 Minuten'],
+      ['15','Every 15 min','Alle 15 Minuten','Alle 15 Minuten'],['20','Every 20 min','Alle 20 Minuten','Alle 20 Minuten'],
+      ['30','Every 30 min','Alle 30 Minuten','Alle 30 Minuten']],
+    textSize:[['normal','Normal','Normal','Normal'],['large','Large','Groß','Groß'],['xlarge','Extra large','Sehr groß','Sehr groß']]
+  };
+  const STR={
+    en:{profile:'Profile & settings',desc:'Personalize CoolRoute. These settings stay on this device.',language:'Language',mobility:'Mobility',heat:'Heat sensitivity',pace:'Walking pace',breaks:'Break frequency',backrest:'Bench with backrest needed',yes:'Yes',no:'No',route:'Route preferences',stairs:'Avoid stairs',cobble:'Avoid cobblestones',needs:'Along the way',toilet:'Toilets',water:'Drinking water',baby:'Baby changing',dog:'Dog with me',kids:'Kids with me',transit:'Include public transport',display:'Display',size:'Text size',contrast:'High contrast',dark:'Dark mode',motion:'Reduce animations',speech:'Read directions aloud',alerts:'Alerts',heatAlert:'Heat alert threshold',showCool:'Show cool places on hot days',saved:'Saved places',home:'Home',doctor:'Doctor',pharmacy:'Pharmacy',supermarket:'Supermarket',none:'Not set',setup:'Change welcome answers',savedHint:'Choose a supported Dortmund location for each shortcut.',unverified:'Preferences only: stairs, cobblestones, step-free access, backrest availability, transit and dog/kid suitability are not verified by the current router.',pretitle:'Your route needs',pretext:'Set preferences before finding a route. Restricted-access routes cannot yet be certified.',savedGoto:'Use a saved place',saveDestination:'Destination',choose:'Choose a place',heatHint:'Current sensor readings are used if available. A cooler departure time cannot be calculated without a forecast.',heatNow:'Current Dortmund sensor reading',notAvailable:'No recent verified sensor temperature available.',heatHot:'Above your alert threshold',heatLow:'Below your alert threshold',coolButton:'Explore cool places',later:'Consider travelling in the morning or evening to avoid midday sun (general advice, not a forecast).',privacy:'Saved locally on this device. No medical questions or account.',welcome:'Welcome to CoolRoute',welcomeDesc:'Three quick questions help us tailor your walking experience.',start:'Save and continue',notify:'Update your preferences any time in Profile.',breakHint:'Break reminder',breakDue:'Time to take a break',breakDone:'Break taken',speechHelp:'Spoken directions use your device speaker, not the microphone.',savedApply:'Use saved destination',selectFirst:'Choose a supported place first.',profileSettings:'Your preferences'},
+    de:{profile:'Profil & Einstellungen',desc:'Stelle CoolRoute ein. Die Angaben bleiben auf diesem Gerät.',language:'Sprache',mobility:'Mobilität',heat:'Hitzeempfindlichkeit',pace:'Gehgeschwindigkeit',breaks:'Pausen',backrest:'Bank mit Rückenlehne nötig',yes:'Ja',no:'Nein',route:'Wünsche für den Weg',stairs:'Treppen vermeiden',cobble:'Kopfsteinpflaster vermeiden',needs:'Unterwegs wichtig',toilet:'Toiletten',water:'Trinkwasser',baby:'Wickelmöglichkeit',dog:'Mit Hund',kids:'Mit Kindern',transit:'Bus und Bahn einbeziehen',display:'Anzeige',size:'Textgröße',contrast:'Hoher Kontrast',dark:'Dunkles Design',motion:'Weniger Animationen',speech:'Wegbeschreibung vorlesen',alerts:'Hinweise',heatAlert:'Hitzewarnung ab',showCool:'Bei Hitze kühle Orte anzeigen',saved:'Gespeicherte Orte',home:'Zuhause',doctor:'Arzt',pharmacy:'Apotheke',supermarket:'Supermarkt',none:'Nicht gewählt',setup:'Startfragen erneut beantworten',savedHint:'Wähle für jeden Kurzbefehl einen unterstützten Dortmunder Ort.',unverified:'Nur Wünsche: Treppenfreiheit, Pflaster, Barrierefreiheit, Bänke mit Lehne, ÖPNV sowie Eignung für Kinder und Hunde sind derzeit nicht geprüft.',pretitle:'Deine Anforderungen',pretext:'Wünsche vor der Routensuche auswählen. Barrierefreiheit wird noch nicht geprüft.',savedGoto:'Gespeichertes Ziel',saveDestination:'Ziel',choose:'Ort auswählen',heatHint:'Wir zeigen aktuelle Sensorwerte, falls vorhanden. Eine verlässlich kühlere Startzeit braucht eine Prognose.',heatNow:'Aktueller Dortmunder Sensorwert',notAvailable:'Kein aktueller, geprüfter Sensorwert verfügbar.',heatHot:'Über deiner Warnschwelle',heatLow:'Unter deiner Warnschwelle',coolButton:'Kühle Orte entdecken',later:'Morgens oder abends ist die Sonne oft schwächer (allgemeiner Hinweis, keine Prognose).',privacy:'Nur lokal gespeichert. Keine medizinischen Fragen und kein Konto.',welcome:'Willkommen bei CoolRoute',welcomeDesc:'Drei Fragen helfen uns, Wege besser auf dich abzustimmen.',start:'Speichern und starten',notify:'Du kannst alles später im Profil ändern.',breakHint:'Pausen-Hinweis',breakDue:'Zeit für eine Pause',breakDone:'Pause gemacht',speechHelp:'Die Ansagen kommen aus dem Lautsprecher, nicht aus dem Mikrofon.',savedApply:'Gespeichertes Ziel benutzen',selectFirst:'Bitte zuerst einen Ort auswählen.',profileSettings:'Deine Einstellungen'},
+    simple:{profile:'Profil und Einstellungen',desc:'Hier passt du die App an. Deine Antworten bleiben auf diesem Gerät.',language:'Sprache',mobility:'Wie bist du unterwegs?',heat:'Wie gut verträgst du Hitze?',pace:'Wie schnell gehst du?',breaks:'Wann brauchst du eine Pause?',backrest:'Brauchst du eine Bank mit Lehne?',yes:'Ja',no:'Nein',route:'Wünsche für deinen Weg',stairs:'Keine Treppen',cobble:'Kein Kopfsteinpflaster',needs:'Das brauche ich unterwegs',toilet:'Toiletten',water:'Trinkwasser',baby:'Wickeltisch',dog:'Mein Hund ist dabei',kids:'Kinder sind dabei',transit:'Bus und Bahn',display:'So sieht die App aus',size:'Größe der Schrift',contrast:'Starke Farben',dark:'Dunkler Bildschirm',motion:'Wenig Bewegung',speech:'Weg vorlesen',alerts:'Warnungen',heatAlert:'Warnung ab dieser Temperatur',showCool:'Bei Hitze kühle Orte zeigen',saved:'Meine Orte',home:'Zuhause',doctor:'Arzt',pharmacy:'Apotheke',supermarket:'Supermarkt',none:'Nicht gewählt',setup:'Drei Startfragen nochmal',savedHint:'Wähle einen Ort aus der Liste.',unverified:'Wichtig: Die App kann noch nicht sicher erkennen, ob es Treppen oder schwierige Wege gibt.',pretitle:'Was brauchst du auf dem Weg?',pretext:'Sag uns, was dir wichtig ist. Die App prüft noch nicht alle Hindernisse.',savedGoto:'Mein Ziel',saveDestination:'Ziel',choose:'Ort auswählen',heatHint:'Wir zeigen neue Messwerte, wenn es welche gibt. Für die beste Zeit brauchen wir eine Wetter-Vorhersage.',heatNow:'Neuer Messwert in Dortmund',notAvailable:'Im Moment gibt es keinen neuen Messwert.',heatHot:'Das ist wärmer als deine Grenze',heatLow:'Das ist unter deiner Grenze',coolButton:'Kühle Orte ansehen',later:'Morgens oder abends ist es oft angenehmer. Das ist keine Wetter-Vorhersage.',privacy:'Deine Antworten bleiben hier. Du brauchst kein Konto.',welcome:'Willkommen bei CoolRoute',welcomeDesc:'Drei kurze Fragen für deinen Weg.',start:'Speichern und weiter',notify:'Du kannst die Antworten später ändern.',breakHint:'Pausen-Erinnerung',breakDue:'Mach jetzt eine Pause',breakDone:'Pause fertig',speechHelp:'Die Stimme kommt aus dem Lautsprecher.',savedApply:'Mein Ziel wählen',selectFirst:'Wähle bitte einen Ort.',profileSettings:'Deine Einstellungen'}
+  };
+  const destinations=['Dortmund Central Station (Hauptbahnhof)','TU Dortmund','City Centre','Dortmund U','Westfalenpark','Phoenix See','Rombergpark','Stadtgarten','Westfalenhalle','Friedensplatz','Dortmund Hörde'];
+  function language(){let a='en';try{a=localStorage.getItem('cr-hack-lang')||'en';}catch{}return STR[a]?a:'en';}
+  const t=k=>STR[language()][k]||STR.en[k]||k;
+  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function load(){let saved={};try{saved=JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch{}const p={...defaults,...saved,saved:{...defaults.saved,...(saved.saved||{})}};
+    for(const key of Object.keys(choices)){if(!choices[key].some(x=>x[0]===p[key]))p[key]=defaults[key];}
+    if(!Number.isFinite(Number(p.heatThreshold)))p.heatThreshold=30;p.heatThreshold=Math.min(40,Math.max(20,Number(p.heatThreshold)));
+    for(const k of Object.keys(defaults.saved)){if(!destinations.includes(p.saved[k]))p.saved[k]='';}return p;}
+  let p=load();const persist=()=>{try{localStorage.setItem(STORE,JSON.stringify(p));}catch{}};
+  function apply(){const shell=document.querySelector('.phone-glass');if(!shell)return;for(const klass of [...shell.classList])if(klass.startsWith('crp-'))shell.classList.remove(klass);
+    shell.classList.add('crp-text-'+p.textSize);if(p.highContrast)shell.classList.add('crp-contrast');if(p.darkMode)shell.classList.add('crp-dark');if(p.reduceMotion)shell.classList.add('crp-reduce-motion');
+    const routing=window.CoolRouteRouting;if(routing){routing.mobility=p.mobility==='wheelchair'?'Wheelchair':'Walking';routing.withDog=!!p.withDog;routing.withKids=!!p.withKids;}
+  }
+  function options(key){return choices[key].map(([value,en,de,simple])=>`<option value="${value}" ${String(p[key])===value?'selected':''}>${escape(({en,de,simple})[language()])}</option>`).join('');}
+  const line=(label,child,hint='')=>`<label class="crp-line"><span>${escape(t(label))}</span>${child}${hint?`<small>${escape(t(hint))}</small>`:''}</label>`;
+  const dropdown=key=>line(key,`<select data-crp-key="${key}">${options(key)}</select>`);
+  const toggle=(key,label)=>`<label class="crp-switch"><span>${escape(t(label))}</span><input type="checkbox" data-crp-key="${key}" ${p[key]?'checked':''}/><span class="crp-slider" aria-hidden="true"></span></label>`;
+  const group=(title,content,open=false)=>`<details class="crp-group" ${open?'open':''}><summary>${escape(t(title))}<span aria-hidden="true">⌄</span></summary><div class="crp-group-body">${content}</div></details>`;
+  const langButtons=()=>`<div class="crl-settings"><div class="crh-language crp-languages" role="group" aria-label="${escape(t('language'))}">${[['de','Deutsch'],['en','English'],['simple','Einfaches Deutsch']].map(([id,label])=>`<button type="button" data-crh="language" data-lang="${id}" aria-pressed="${language()===id}" class="${language()===id?'active':''}">${label}</button>`).join('')}</div></div>`;
+  const selectedDest=(key)=>`<select data-crp-save="${key}" aria-label="${escape(t(key))}"><option value="">${escape(t('none'))}</option>${destinations.map(d=>`<option ${p.saved[key]===d?'selected':''} value="${escape(d)}">${escape(d)}</option>`).join('')}</select>`;
+  const savedFields=()=>Object.keys(defaults.saved).map(key=>line(key,selectedDest(key))).join('');
+  const checkGroups=()=>toggle('avoidStairs','stairs')+toggle('avoidCobblestones','cobble')+toggle('needsToilet','toilet')+toggle('needsWater','water')+toggle('needsBaby','baby')+toggle('withDog','dog')+toggle('withKids','kids')+toggle('transit','transit');
+  const profileHtml=()=>`<div class="crp-profile"><p class="crp-intro">${escape(t('desc'))}</p>
+    ${group('language',langButtons(),true)}
+    ${group('profileSettings',dropdown('mobility')+dropdown('heat')+dropdown('pace')+dropdown('breaks')+toggle('backrest','backrest'),true)}
+    ${group('route',checkGroups()+`<p class="crp-note">${escape(t('unverified'))}</p>`)}
+    ${group('saved',`<p class="crp-note">${escape(t('savedHint'))}</p>`+savedFields())}
+    ${group('display',dropdown('textSize')+toggle('highContrast','contrast')+toggle('darkMode','dark')+toggle('reduceMotion','motion')+toggle('readAloud','speech')+`<p class="crp-note">${escape(t('speechHelp'))}</p>`)}
+    ${group('alerts',line('heatAlert',`<div class="crp-range"><input data-crp-key="heatThreshold" type="range" min="20" max="40" step="1" value="${p.heatThreshold}" aria-label="${escape(t('heatAlert'))}"/><output data-crp-output="heatThreshold">${p.heatThreshold} °C</output></div>`)+toggle('showCool','showCool')+`<p class="crp-note">${escape(t('heatHint'))}</p>`)}
+    <button type="button" class="crp-restart" data-crp-action="setup">${escape(t('setup'))}</button><p class="crp-note">${escape(t('privacy'))}</p></div>`;
+  screenProfile=function(){return page(head(t('profile')),profileHtml(),'profile','crp-profile-page');};
+  function routeAdditions(){return `<section class="crp-route-needs" aria-label="${escape(t('pretitle'))}"><h3>${escape(t('pretitle'))}</h3><p>${escape(t('pretext'))}</p>
+    <div class="crp-route-pills">${toggle('avoidStairs','stairs')}${toggle('avoidCobblestones','cobble')}${toggle('needsToilet','toilet')}${toggle('needsWater','water')}${toggle('needsBaby','baby')}${toggle('withDog','dog')}${toggle('withKids','kids')}${toggle('transit','transit')}</div>
+    <label class="crp-line"><span>${escape(t('savedGoto'))}</span><select id="crp-destination"><option value="">${escape(t('choose'))}</option>${Object.keys(defaults.saved).filter(k=>p.saved[k]).map(k=>`<option value="${escape(p.saved[k])}">${escape(t(k))}: ${escape(p.saved[k])}</option>`).join('')}</select></label>
+    <p class="crp-note">${escape(t('unverified'))}</p></section>`;}
+  function preNavigate(){return `<div class="crp-before-nav"><b>${escape(t('pretitle'))}</b><span>${escape(t('mobility'))}: ${escape((choices.mobility.find(x=>x[0]===p.mobility)||choices.mobility[0])[{en:1,de:2,simple:3}[language()]])} · ${escape(t('breaks'))}: ${escape((choices.breaks.find(x=>x[0]===p.breaks)||choices.breaks[0])[{en:1,de:2,simple:3}[language()]])}</span><small>${escape(t('unverified'))}</small></div>`;}
+  function enhanceRoute(){if(state.screen==='route'){
+      const target=document.querySelector('.crr-scroll [data-crr="calculate"]');if(target&&!document.querySelector('.crp-route-needs'))target.insertAdjacentHTML('beforebegin',routeAdditions());
+    }if(state.screen==='detail'){
+      const target=document.querySelector('.crr-sheet [data-crr="navigate"]');if(target&&!document.querySelector('.crp-before-nav'))target.insertAdjacentHTML('beforebegin',preNavigate());
+    }}
+  const oldRender=render;
+  let lastScreen=null;let navStart=0,breakReset=0,lastRead='',lastRouteList=null;
+  render=function(...args){
+    const engine=window.CoolRouteRouting;
+    // Select the recommended real candidate once after a fresh calculation.
+    // Do not overwrite the user's manual selection after they tap another route.
+    if(state.screen==='results' && engine?.status==='success' && engine.routeList?.length && engine.routeList!==lastRouteList){
+      lastRouteList=engine.routeList;
+      const wanted=p.heat==='well'?'fastest':p.heat==='poor'?'shade':'balanced';
+      const match=engine.routeList.find(r=>r.id===wanted) || engine.routeList[engine.routeList.length-1];
+      if(match){state.selectedRoute=match.id;engine.selected=match.id;}
+    }
+    apply();const res=oldRender(...args);enhanceRoute();
+    if(state.screen==='navigation'&&lastScreen!=='navigation'){navStart=Date.now();breakReset=navStart;lastRead='';}
+    if(state.screen!=='navigation'&&lastScreen==='navigation'){window.speechSynthesis?.cancel();lastRead='';}
+    lastScreen=state.screen;setTimeout(drawHeatWarning,0);setTimeout(checkSpeech,0);return res;};
+  const app=document.getElementById('app');
+  function updateValue(key,value){if(!(key in defaults)||key==='saved')return;
+    if(choices[key]){if(!choices[key].some(v=>v[0]===String(value)))return;p[key]=String(value);}
+    else if(typeof defaults[key]==='boolean')p[key]=!!value;
+    else if(key==='heatThreshold')p[key]=Math.min(40,Math.max(20,Number(value)||30));
+    persist();apply();}
+  app.addEventListener('change',e=>{const el=e.target;
+    if(el.dataset.crpKey){updateValue(el.dataset.crpKey,el.type==='checkbox'?el.checked:el.value);
+      if(el.dataset.crpKey==='heatThreshold'){app.querySelector('[data-crp-output="heatThreshold"]')?.replaceChildren(document.createTextNode(p.heatThreshold+' °C'));}
+      if(el.dataset.crpKey==='withDog'||el.dataset.crpKey==='withKids'){if(window.CoolRouteRouting){window.CoolRouteRouting.withDog=p.withDog;window.CoolRouteRouting.withKids=p.withKids;}}
+    }
+    if(el.id==='crr-mode'){p.mobility=el.value==='Wheelchair'?'wheelchair':'foot';persist();}
+    if(el.id==='crr-dog'){p.withDog=el.checked;persist();}
+    if(el.id==='crr-kids'){p.withKids=el.checked;persist();}
+    if(el.dataset.crpSave){p.saved[el.dataset.crpSave]=destinations.includes(el.value)?el.value:'';persist();}
+    if(el.id==='crp-destination'&&el.value){const target=app.querySelector('#crr-end');if(target){target.value=el.value;target.dispatchEvent(new Event('change',{bubbles:true}));}}
+  },true);
+  app.addEventListener('input',e=>{const el=e.target;if(el.dataset.crpKey==='heatThreshold'){const out=app.querySelector('[data-crp-output="heatThreshold"]');if(out)out.textContent=el.value+' °C';}},true);
+  app.addEventListener('click',e=>{const el=e.target.closest('[data-crp-action]');if(!el)return;
+    e.preventDefault();e.stopImmediatePropagation();if(el.dataset.crpAction==='setup')showOnboarding();
+    if(el.dataset.crpAction==='break'){breakReset=Date.now();const notice=app.querySelector('.crp-break-banner');if(notice)notice.remove();}
+  },true);
+  function welcomeChoices(key){return `<fieldset class="crp-welcome-field"><legend>${escape(t(key))}</legend><div class="crp-choicegrid">${choices[key].map(([value,en,de,simple])=>{const label=({en,de,simple})[language()];return `<label><input type="radio" name="crp-onboard-${key}" value="${value}" ${p[key]===value?'checked':''}><span>${escape(label)}</span></label>`;}).join('')}</div></fieldset>`;}
+  function showOnboarding(){const shell=document.querySelector('.phone-glass');if(!shell||shell.querySelector('.crp-onboard'))return;
+    const wrap=document.createElement('div');wrap.className='crp-onboard';wrap.setAttribute('role','dialog');wrap.setAttribute('aria-modal','true');wrap.setAttribute('aria-label',t('welcome'));
+    wrap.innerHTML=`<form class="crp-onboard-form"><div class="crp-onboard-mark">✦ <span>coolroute.</span></div><h1>${escape(t('welcome'))}</h1><p>${escape(t('welcomeDesc'))}</p>${welcomeChoices('mobility')}${welcomeChoices('heat')}${welcomeChoices('breaks')}<button type="submit" class="crp-start">${escape(t('start'))} →</button><small>${escape(t('notify'))}</small></form>`;
+    shell.append(wrap);wrap.querySelector('input')?.focus();
+    wrap.querySelector('form').addEventListener('submit',event=>{event.preventDefault();for(const key of ['mobility','heat','breaks']){const el=wrap.querySelector(`[name="crp-onboard-${key}"]:checked`);if(el)updateValue(key,el.value);}
+      try{localStorage.setItem(READY,'yes');}catch{}wrap.remove();render();});
+  }
+  // Recent observations only; never fabricate heat-warning temperatures or forecasts.
+  const climate={at:0,loading:false,reading:null};
+  async function refreshClimate(){if(climate.loading||Date.now()-climate.at<600000)return;climate.loading=true;climate.at=Date.now();
+    try{const ctl=new AbortController();const timeout=setTimeout(()=>ctl.abort(),5500);
+      let response;try{response=await fetch('https://open-data.dortmund.de/api/explore/v2.1/catalog/datasets/klimasensoren-aktuelle-messungen/records?limit=100',{signal:ctl.signal});}finally{clearTimeout(timeout);}
+      if(!response.ok)throw Error('data not available');const obj=await response.json();
+      const data=(obj.results||[]).map(r=>({value:Number(r.air_temperature??r.data_air_temperature??NaN),at:new Date(r.measured_at).getTime(),type:String(r.sensormodell||'')})).filter(v=>Number.isFinite(v.value)&&v.value>-35&&v.value<55&&Number.isFinite(v.at)&&Date.now()-v.at<10800000&&Date.now()-v.at>=-300000&&!/BLG|BLACK.?GLOBE/i.test(v.type)).sort((a,b)=>b.at-a.at);
+      climate.reading=data[0]||null;
+    }catch{climate.reading=null;}finally{climate.loading=false;if(['home','route'].includes(state.screen))drawHeatWarning();}
+  }
+  function drawHeatWarning(){const root=document.querySelector('.crp-home-heat');if(root)root.remove();
+    if(!['home','route'].includes(state.screen))return;
+    let host=state.screen==='home'?document.querySelector('.crs-home .crs-content, .crs-home .crs-home-scroll, .crs-home .scroll-area, .crs-home'):document.querySelector('.crr-scroll');
+    if(!host)return;if(climate.reading===null){refreshClimate();return;}const v=climate.reading.value;
+    if(v<p.heatThreshold||(!p.showCool&&!p.heatThreshold))return;
+    const region=document.createElement('section');region.className='crp-home-heat';region.setAttribute('role','status');
+    region.innerHTML=`<b>${escape(t('heatNow'))}: ${v.toFixed(1)} °C</b><p>${escape(t('heatHot'))} (${p.heatThreshold} °C). ${escape(t('later'))}</p>${p.showCool?`<button type="button" data-action="go" data-screen="explore">${escape(t('coolButton'))} →</button>`:''}<small>Source: Dortmund climate sensors · ${escape(new Date(climate.reading.at).toLocaleTimeString(language()==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'}))}</small>`;
+    if(state.screen==='route'){host.prepend(region);}else{const card=host.querySelector('.crs-weather-card, .crh-weather, .crs-weather');if(card)card.after(region);else host.prepend(region);}
+  }
+  // Speech synthesis provides spoken instructions (speaker output, no microphone recording).
+  function checkSpeech(){if(state.screen!=='navigation'||!p.readAloud||!('speechSynthesis' in window))return;
+    const node=app.querySelector('.crnav-turn-content p, .crr-nav-banner p');if(!node)return;const message=node.textContent.trim();if(!message||message===lastRead)return;lastRead=message;
+    window.speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(message);utter.lang=language()==='en'?'en-GB':'de-DE';utter.rate=p.pace==='relaxed'?.92:p.pace==='brisk'?1.12:1;window.speechSynthesis.speak(utter);
+  }
+  function checkBreaks(){if(state.screen!=='navigation')return;checkSpeech();const mins=Number(p.breaks);if(!mins||!breakReset||Date.now()-breakReset<mins*60000)return;
+    if(app.querySelector('.crp-break-banner'))return;const location=app.querySelector('.crnav-bottom, .crr-nav-sheet');if(!location)return;
+    location.insertAdjacentHTML('afterbegin',`<div class="crp-break-banner" role="status"><span>${escape(t('breakDue'))}</span><button type="button" data-crp-action="break">${escape(t('breakDone'))}</button></div>`);
+  }
+  setInterval(checkBreaks,10000);
+  apply();render();
+  // Keep skyline launch screen on each reload; show first-launch questions only after it ends.
+  let done=false;try{done=localStorage.getItem(READY)==='yes';}catch{}if(!done)setTimeout(showOnboarding,1600);
+  window.CoolRoutePreferences={get:()=>structuredClone(p),openSetup:showOnboarding};
+})();

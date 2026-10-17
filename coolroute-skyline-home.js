@@ -107,13 +107,8 @@
           ${weather ? `<div class="crs-weather-card">${weather}</div>` : ''}
           <h2 class="crs-section-title">${c.explore}</h2>
           <nav class="crs-actions" aria-label="Explore CoolRoute">
-            ${quick.map(([screen, ico, label, color]) => `<button class="crs-action" data-action="go" data-screen="${screen}" type="button"><span class="crs-action-ico ${color}">${svgIcon(ico)}</span><span>${label}</span></button>`).join('')}
+            ${quick.map(([screen, ico, label, color]) => `<button class="crs-action" data-action="go" data-screen="${screen}" type="button"><span class="crs-action-ico ${color}">${svgIcon(ico)}</span><span>${label}</span><span class="crs-action-arrow" aria-hidden="true">↗</span></button>`).join('')}
           </nav>
-          <section class="crs-feature-card">
-            <div class="crs-feature-illustration" aria-hidden="true">${svgIcon('pin')} ${svgIcon('tree')}</div>
-            <div><h3>${c.places}</h3><p>${c.placesText}</p></div>
-            <button class="crs-feature-button" type="button" data-action="go" data-screen="explore" aria-label="${c.browse}">${svgIcon('arrow')}</button>
-          </section>
           <p class="crs-photo-note">${c.eyebrow}</p>
         </div>
       </div>

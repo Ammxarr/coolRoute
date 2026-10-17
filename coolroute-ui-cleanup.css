@@ -1,0 +1,4 @@
+/* Hide route-only technical disclosures; keep them available in Profile > Data & Sources. */
+#app .crr-page details.crr-warnings,
+#app .crr-page details.crr-sources,
+.phone-hint { display: none !important; }

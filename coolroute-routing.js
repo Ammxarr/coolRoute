@@ -28,7 +28,7 @@
   const DSETS = [
     ['trees','baumkataster'], ['shade','fb60-schattenplatze'],
     ['water','trinkwasserbrunnen'], ['indoor','kuhle-innenraume'],
-    ['readings','klimasensoren-messdaten'], ['stations','klimasensoren-standorte'],
+    ['readings','klimasensoren-aktuelle-messungen'], ['stations','klimasensoren-standorte'],
     ['toilet','offentliche-toiletten'], ['accessible','offentliche-toiletten-behindertengerecht'],
     ['transit','haltestellen'], ['playground','spielplatze']
   ];
@@ -37,7 +37,7 @@
   const t = key => labels[l()][key]||labels.en[key]||key;
   const service = {status:'idle', error:'', routeList:[], selected:'shade', sources:{}, warnings:[], features:{}, departure:'', origin:null,destination:null, gps:null, watch:null, leaf:null, loadingId:0, resultMap:null, mapMount:0, liveInstruction:0, nearestDistance:null, gpsOn:false, dataCache:null, purpose:'', mobility:'Walking',withDog:false,withKids:false};
   window.CoolRouteRouting = service;
-  service.version='distinct-routes-v2';
+  service.version='route-corridor-data-v3';
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const radians=n=>n*Math.PI/180;
   function meters(a,b){const dlat=radians(b[0]-a[0]),dlon=radians(b[1]-a[1]);const q=Math.sin(dlat/2)**2+Math.cos(radians(a[0]))*Math.cos(radians(b[0]))*Math.sin(dlon/2)**2;return 12742000*Math.asin(Math.min(1,Math.sqrt(q)));}
@@ -55,7 +55,7 @@
     return null;
   }
   function extract(kind,r){const at=locationField(r);if(!at||!Number.isFinite(at[0])||!Number.isFinite(at[1])||at[0]<51.25||at[0]>51.7||at[1]<7.15||at[1]>7.75)return null;
-    return {at,kind,name:String(r.objektname||r.schattenplatz||r.bezeichnung||r.name||r.body_item_name||r.art_deutsc||kind),crown:Number(r.kronendurc||r.kronendurchmesser||0),height:Number(r.baumhohe||r.baumhoehe||0),temp:kind==='readings'?Number(r.data_air_temperature??r.air_temperature??NaN):NaN,measured:r.measured_at||r.messdatum_lang||r.timestamp||null,id:String(r.id||r.device_id||r.objektname||'')};
+    return {at,kind,name:String(r.objektname||r.schattenplatz||r.bezeichnung||r.name||r.body_item_name||r.art_deutsc||kind),crown:Number(r.kronendurc||r.kronendurchmesser||0),height:Number(r.baumhoehe||r.baumhohe||0),temp:kind==='readings'?Number(r.data_air_temperature??r.air_temperature??NaN):NaN,measured:r.measured_at||r.messdatum_lang||r.timestamp||null,id:String(r.device_id||r.data_station_id||r.id||r.objektname||''),sensorType:String(r.sensormodell||r.body_item_fields_gerateinformation_geratetyp||'')};
   }
   function dateAtTime(s){const now=new Date();const [h,m]=String(s||'12:00').split(':').map(Number);now.setHours(h||0,m||0,0,0);return now;}
   // NOAA approximate solar ephemeris. Angles calibrated in degrees, sun azimuth clockwise from N.
@@ -74,26 +74,39 @@
   // NOT validated SOLWEIG: rough radiative proxy with shortwave absorption, no measured longwave, sky view or building shadows.
   function modelMrt(temp,shade,sun){if(!Number.isFinite(temp))return null;const sigma=5.670374419e-8,eps=.97,alpha=.70;const direct=850*Math.sin(sun.alt),diffuse=120*Math.sin(sun.alt);const irradiance=(direct+diffuse)*(.30)*(1-.82*shade);return Math.pow((temp+273.15)**4 + alpha*irradiance/(eps*sigma),.25)-273.15;}
   function candidateSamples(line,spacing=35){const out=[];for(let i=1;i<line.length;i++){const a=line[i-1],b=line[i],dist=meters(a,b);const n=Math.max(1,Math.ceil(dist/spacing));for(let j=0;j<n;j++){const f=(j+.5)/n;out.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,dist/n]);}}return out;}
-  function latestTemperatures(features){const now=Date.now(), data=(features.readings||[]).filter(f=>Number.isFinite(f.temp)&&f.temp>-35&&f.temp<55&&f.measured&&Math.abs(now-new Date(f.measured).getTime())<3*3600000);const result=[];const ids=new Set();for(const f of data.sort((a,b)=>new Date(b.measured)-new Date(a.measured))){const id=f.id||f.at.join(',');if(!ids.has(id)){result.push(f);ids.add(id);}}return result;}
+  function latestTemperatures(features){const now=Date.now(), data=(features.readings||[]).filter(f=>!/BLACK.?GLOBE|\bBLG\b/i.test(f.sensorType||'')).filter(f=>Number.isFinite(f.temp)&&f.temp>-35&&f.temp<55&&f.measured&&Math.abs(now-new Date(f.measured).getTime())<3*3600000);const result=[];const ids=new Set();for(const f of data.sort((a,b)=>new Date(b.measured)-new Date(a.measured))){const id=f.id||f.at.join(',');if(!ids.has(id)){result.push(f);ids.add(id);}}return result;}
   function localTemp(at, sensors){let w=0,sum=0;for(const p of sensors){const d=Math.max(50,meters(at,p.at));if(d>6000)continue;const v=1/(d*d);w+=v;sum+=p.temp*v;}return w?sum/w:null;}
-  function facilitiesAlong(samples, features){const counts={};for(const kind of ['trees','shade','water','indoor','toilet','accessible','transit','playground','stations']){
-    const threshold=kind==='trees'?15:kind==='shade'?28:kind==='indoor'?65:50;
-    counts[kind]=null;if(!service.sources[kind]?.ok)continue;
-    counts[kind]=(features[kind]||[]).filter(f=>samples.some(s=>meters(f.at,s)<threshold)).length;
-  }return counts;}
+  const GRID_LAT=.0009,GRID_LON=.0014;
+  function spatialGrid(points){const map=new Map();for(const p of points||[]){
+    const key=Math.floor(p.at[0]/GRID_LAT)+':'+Math.floor(p.at[1]/GRID_LON);
+    if(!map.has(key))map.set(key,[]);map.get(key).push(p);
+  }return map;}
+  function gridNear(grid,p,rings=2){const y=Math.floor(p[0]/GRID_LAT),x=Math.floor(p[1]/GRID_LON),out=[];
+    for(let dy=-rings;dy<=rings;dy++)for(let dx=-rings;dx<=rings;dx++){
+      const items=grid.get((y+dy)+':'+(x+dx));if(items)out.push(...items);
+    }return out;}
+  function facilitiesAlong(samples, features){const counts={}, sampleGrid=spatialGrid(samples.map(s=>({at:[s[0],s[1]]})));
+    for(const kind of ['trees','shade','water','indoor','toilet','accessible','transit','playground','stations']){
+      const threshold=kind==='trees'?15:kind==='shade'?28:kind==='indoor'?65:50;
+      counts[kind]=null;if(!service.sources[kind]?.ok)continue;
+      counts[kind]=(features[kind]||[]).filter(f=>gridNear(sampleGrid,f.at,1).some(s=>meters(f.at,s.at)<threshold)).length;
+    }return counts;
+  }
   function scoreRoute(route, features, departure) {
     const samples=candidateSamples(route.coords), sun=sunPosition(dateAtTime(departure),route.coords[0][0],route.coords[0][1]);
     const daylight=sun.alt>.075, hasShadeData=!!(service.sources.trees?.ok||service.sources.shade?.ok);
     const sensors=Math.abs(dateAtTime(departure).getTime()-Date.now())<=2*3600000?latestTemperatures(features):[];
+    const treesGrid=spatialGrid(features.trees),shadeGrid=spatialGrid(features.shade);
     let shadeTotal=0, greenTotal=0, radTotal=0, radMeters=0, total=0, balancedCost=0, coolCost=0;
     for(const sample of samples){
       const p=[sample[0],sample[1]],w=sample[2];total+=w;
-      const sh=daylight&&hasShadeData?shadeAt(p,features,sun):0;
+      const nearby={trees:gridNear(treesGrid,p,2),shade:gridNear(shadeGrid,p,2)};
+      const sh=daylight&&hasShadeData?shadeAt(p,nearby,sun):0;
       // Green-proximity is NOT shade: it is an independent feature useful after sunset.
       let nearGreen=0;
       if(hasShadeData){
-        const treeNearby=(features.trees||[]).some(tree=>meters(p,tree.at)<22);
-        const shadeNearby=(features.shade||[]).some(place=>meters(p,place.at)<50);
+        const treeNearby=nearby.trees.some(tree=>meters(p,tree.at)<22);
+        const shadeNearby=nearby.shade.some(place=>meters(p,place.at)<50);
         nearGreen=treeNearby?1:shadeNearby?.55:0;
       }
       shadeTotal+=sh*w;greenTotal+=nearGreen*w;
@@ -114,22 +127,99 @@
   function decodePolyline(encoded){let lat=0,lon=0,index=0;const pts=[];while(index<encoded.length){let shift=0,result=0,b;do{b=encoded.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5;}while(b>=32&&index<encoded.length);lat+=(result&1)?~(result>>1):result>>1;
       shift=0;result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5;}while(b>=32&&index<encoded.length);lon+=(result&1)?~(result>>1):result>>1;pts.push([lat/1e6,lon/1e6]);}return pts;}
   async function fetchJson(url,timeout=15000){const ctrl=new AbortController();const handle=setTimeout(()=>ctrl.abort(),timeout);try{const res=await fetch(url,{signal:ctrl.signal,headers:url.startsWith(ROUTE_API)?{'X-Client-Id':'coolroute-dortmund-hackathon'}:{}});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}finally{clearTimeout(handle);}}
-  async function cityData(kind, slug, bound){const result=[];const base=API+encodeURIComponent(slug)+'/records';const maxPages=kind==='trees'?12:kind==='readings'?2:2;let queried=0,total=0,usedFallback=false;
-    for(let page=0;page<maxPages;page++){
-      const params=new URLSearchParams({limit:'100',offset:String(page*100)});
-      if(kind==='readings')params.set('order_by','measured_at desc');
-      else params.set('where',`in_bbox(geo_point_2d, ${bound.map(n=>n.toFixed(5)).join(', ')})`);
-      let json;try{json=await fetchJson(base+'?'+params.toString(),11000);}catch(err){if(!result.length && kind!=='readings'){
-          // Some datasets use a different coordinate-field identifier. A small unfiltered query is a fallback, not proof of full coverage.
-          params.delete('where');params.set('limit','100');params.set('offset','0');usedFallback=true;json=await fetchJson(base+'?'+params.toString(),11000);
-        }else if(!result.length)throw err;else break;
+  // Fetch only relevant map tiles around actual candidate routes, not an arbitrary
+  // prefix of Dortmund's citywide tree records. Spatial queries are paginated.
+  const TREE_LAT=.0027, TREE_LON=.0038, TREE_RADIUS_M=75, TREE_MAX_TILES=90;
+  const treeTileCache=new Map();
+  const inTile=(at,b)=>at[0]>=b[0]&&at[0]<=b[2]&&at[1]>=b[1]&&at[1]<=b[3];
+  function routeTreeTiles(routes){
+    const cells=new Map();
+    for(const r of routes){
+      for(let n=1;n<r.coords.length;n++){
+        const a=r.coords[n-1],b=r.coords[n],dist=meters(a,b),steps=Math.max(1,Math.ceil(dist/70));
+        for(let step=0;step<=steps;step++){
+          const f=step/steps,lat=a[0]+(b[0]-a[0])*f,lon=a[1]+(b[1]-a[1])*f;
+          const latPad=TREE_RADIUS_M/111320,lonPad=TREE_RADIUS_M/(111320*Math.cos(radians(lat)));
+          const ymin=Math.floor((lat-latPad)/TREE_LAT),ymax=Math.floor((lat+latPad)/TREE_LAT);
+          const xmin=Math.floor((lon-lonPad)/TREE_LON),xmax=Math.floor((lon+lonPad)/TREE_LON);
+          for(let y=ymin;y<=ymax;y++)for(let x=xmin;x<=xmax;x++){
+            const key=y+':'+x;
+            if(!cells.has(key))cells.set(key,[y*TREE_LAT,x*TREE_LON,(y+1)*TREE_LAT,(x+1)*TREE_LON]);
+          }
+        }
       }
-      const records=json.results||[];queried+=records.length;total=Math.max(total,Number(json.total_count)||0);result.push(...records.map(r=>extract(kind,r)).filter(Boolean));if(records.length<100||(!params.has('where')&&kind!=='readings'))break;
     }
-    return {rows:result.filter(r=>(kind==='readings')||r.at[0]>=bound[0]&&r.at[0]<=bound[2]&&r.at[1]>=bound[1]&&r.at[1]<=bound[3]),limited:usedFallback||total>queried,fallback:usedFallback};
+    return [...cells.entries()];
   }
-  async function getEnvironmentalData(origin,dest){const bounds=bbox(origin,dest);const feats={};service.sources={};const queue=DSETS.slice();async function worker(){while(queue.length){const [kind,slug]=queue.shift();try{const data=await cityData(kind,slug,bounds);feats[kind]=data.rows;service.sources[kind]={ok:true,count:data.rows.length,limited:data.limited,fallback:data.fallback};}catch(error){feats[kind]=[];service.sources[kind]={ok:false,error:error.message,count:0};}}}
-    await Promise.all([worker(),worker(),worker(),worker()]);return feats;}
+  async function pageData(slug,bound,{field='geo_point_2d',ordered=false,maxRecords=10000}={}){
+    const output=[];const base=API+encodeURIComponent(slug)+'/records';let count=Infinity;
+    for(let offset=0;offset<Math.min(count,maxRecords);offset+=100){
+      const params=new URLSearchParams({limit:'100',offset:String(offset)});
+      if(bound)params.set('where',`in_bbox(${field}, ${bound.map(x=>x.toFixed(7)).join(', ')})`);
+      if(ordered)params.set('order_by','measured_at desc');
+      const body=await fetchJson(base+'?'+params,13500);
+      count=Number(body.total_count)||0;
+      const rows=body.results||[];output.push(...rows);
+      if(rows.length<100)break;
+    }
+    return {records:output,limited:output.length<count};
+  }
+  function routeNear(point, routes, maxDist){
+    for(const r of routes){for(let i=1;i<r.coords.length;i++){
+      const a=r.coords[i-1],b=r.coords[i],lat=point[0],c=Math.cos(radians(lat));
+      const ax=a[1]*111320*c,ay=a[0]*111320,bx=b[1]*111320*c,by=b[0]*111320;
+      const px=point[1]*111320*c,py=point[0]*111320;
+      const vx=bx-ax,vy=by-ay,f=clamp(((px-ax)*vx+(py-ay)*vy)/(vx*vx+vy*vy||1),0,1);
+      if(Math.hypot(px-(ax+vx*f),py-(ay+vy*f))<=maxDist)return true;
+    }}return false;
+  }
+  async function loadRouteTrees(routes){
+    const tiles=routeTreeTiles(routes),selection=tiles.slice(0,TREE_MAX_TILES),all=[];let partial=tiles.length>TREE_MAX_TILES,errors=0;
+    let cursor=0;
+    async function worker(){while(cursor<selection.length){const [key,bound]=selection[cursor++];
+      try{
+        let value=treeTileCache.get(key);
+        if(!value || value.expiry<Date.now()){
+          const page=await pageData('baumkataster',bound);
+          value={rows:page.records.map(r=>extract('trees',r)).filter(Boolean),limited:page.limited,expiry:Date.now()+12*60000};
+          treeTileCache.set(key,value);
+        }
+        partial ||=value.limited;all.push(...value.rows);
+      }catch(error){errors++;partial=true;}
+    }}
+    await Promise.all([worker(),worker(),worker(),worker()]);
+    const unique=new Map();for(const tree of all){
+      if(!routeNear(tree.at,routes,TREE_RADIUS_M))continue;
+      const key=tree.id&&tree.id!=='undefined'?tree.id+':'+tree.at.join(','):tree.at.join(',');unique.set(key,tree);
+    }
+    const rows=[...unique.values()];
+    return {rows,limited:partial,ok:errors<selection.length || !selection.length,
+      fetchedTiles:selection.length,availableTiles:tiles.length,errors};
+  }
+  async function cityData(kind, slug, bound){
+    if(kind==='readings'){
+      // Dortmund's last measurement per sensor; use air_temperature, never internal or Black Globe temperature.
+      const data=await pageData(slug,null,{ordered:true,maxRecords:1000});
+      const rows=data.records.map(r=>extract(kind,r)).filter(Boolean);
+      return {rows,limited:data.limited,fallback:false};
+    }
+    try{
+      const data=await pageData(slug,bound);
+      return {rows:data.records.map(r=>extract(kind,r)).filter(Boolean).filter(r=>inTile(r.at,bound)),limited:data.limited,fallback:false};
+    }catch(error){
+      // Other datasets occasionally publish a different geometry field. No silent success label.
+      const data=await pageData(slug,null,{maxRecords:100});
+      return {rows:data.records.map(r=>extract(kind,r)).filter(Boolean).filter(r=>inTile(r.at,bound)),limited:true,fallback:true};
+    }
+  }
+  async function getEnvironmentalData(origin,dest){
+    const bounds=bbox(origin,dest),feats={trees:[]};service.sources={trees:{ok:false,count:0,pending:true}};
+    const queue=DSETS.filter(([kind])=>kind!=='trees').slice();
+    async function worker(){while(queue.length){const [kind,slug]=queue.shift();
+      try{const data=await cityData(kind,slug,bounds);feats[kind]=data.rows;service.sources[kind]={ok:true,count:data.rows.length,limited:data.limited,fallback:data.fallback};}
+      catch(error){feats[kind]=[];service.sources[kind]={ok:false,error:error.message,count:0};}
+    }}await Promise.all([worker(),worker(),worker()]);return feats;
+  }
   function sideOffset(waypoint,start,end){const m=midpoint(start,end);return meters(waypoint,m);}
   function waypoints(features,start,end){const dist=meters(start,end);const can=[];
     for(const pt of (features.shade||[]).concat((features.indoor||[]))){const d1=meters(start,pt.at),d2=meters(end,pt.at);if(d1<120||d2<120||d1+d2>dist*1.42+230||d1+d2<dist*.85)continue;can.push({coord:pt.at,score:d1+d2+Math.max(0,sideOffset(pt.at,start,end)-350)*.3});}
@@ -248,6 +338,13 @@
           for(const route of routes)addRoute(route);
         }catch(e){service.warnings.push('A detour was unavailable: '+e.message);}
       }
+      // Load uncapped tree coverage for a narrow corridor around ALL candidate paths.
+      // This happens after routing so we do not fetch the whole city (or huge endpoint bounding boxes).
+      const trees=await loadRouteTrees(possibilities);
+      features.trees=trees.rows;
+      service.sources.trees={ok:trees.ok,count:trees.rows.length,limited:trees.limited,
+        fetchedTiles:trees.fetchedTiles,availableTiles:trees.availableTiles,errors:trees.errors};
+      service.features=features;
       const scored=possibilities.map(r=>scoreRoute(r,features,service.departure));
       service.routeList=selectDistinctProfiles(scored);
       service.selected=service.routeList[service.routeList.length-1].id;
@@ -265,7 +362,7 @@
   function formattedCoords(list){return list.map(p=>p.map(x=>x.toFixed(4)).join(',')).join(';');}
   function options(selected){return positions.map(([name])=>`<option ${name===selected?'selected':''} value="${esc(name)}">${esc(name)}</option>`).join('');}
   function title(s){return `<header class="crr-head"><button type="button" data-crr="back" aria-label="Back">←</button><b>${esc(s)}</b><span></span></header>`;}
-  function dataNote(){return `<p class="crr-note">${esc(t('limits'))} <a href="https://open-data.dortmund.de/" target="_blank" rel="noopener">Stadt Dortmund</a> · <a href="https://valhalla.openstreetmap.de/" target="_blank" rel="noopener">Valhalla / OpenStreetMap</a></p>`;}
+  function dataNote(){return ''; /* Detailed methodology is available in Profile → Data sources. */}
   const colors={fastest:'#1d72d8',balanced:'#0d9b95',shade:'#087957'};
   function routeName(id){if(id==='shade'){const r=service.routeList.find(x=>x.id==='shade');if(r&&!r.daylight)return l()==='de'?'Grünere Alternative':'Greener alternative';if(r&&!r.hasShadeData)return l()==='de'?'Anderer Fußweg':'Alternative walking route';return l()==='de'?'Schatten-Alternative':'Shade-focused route';}return t(id);}
   function weather(r){return r.avgMrt!==null?`<b>${r.avgMrt.toFixed(1)} °C</b> <small>${esc(t('approx'))} MRT proxy</small>`:`<small>${esc(t('noMrt'))}</small>`;}
@@ -278,15 +375,15 @@
   function compareCard(r){return `<button type="button" data-crr="select" data-id="${r.id}" class="crr-choice ${state.selectedRoute===r.id?'active':''}"><span class="crr-color" style="background:${colors[r.id]}"></span><span><b>${esc(routeName(r.id))}</b><small>${r.km.toFixed(2)} km · ${r.minutes} min</small><small>${shadeText(r)}</small><small>${greenText(r)}</small></span><span>›</span></button>`;}
   function routeSummary(r){return `<div class="crr-summary"><strong>${r.km.toFixed(2)} km</strong><strong>${r.minutes} min</strong><div>${weather(r)}</div></div>`;}
   function statusBlock(){return service.status==='loading'?`<div class="crr-message crr-loading"><span class="crr-spinner"></span>${esc(t('working'))}</div>`:service.status==='error'?`<div class="crr-message" role="alert">${esc(t('fail'))}<p>${esc(service.error)}</p><button class="crr-main" data-crr="calculate">${esc(t('retry'))}</button></div>`:service.status!=='success'?`<div class="crr-message">${esc(t('selection'))}</div>`:'';}
-  function statusWarnings(){return service.warnings.length?`<details class="crr-warnings"><summary>Data limitations (${service.warnings.length})</summary>${service.warnings.map(s=>`<p>${esc(s)}</p>`).join('')}</details>`:'';}
+  function statusWarnings(){return ''; /* Not a scrolling list in route UI. */}
   function liveMapBox(){return `<div class="crr-map-wrap"><div id="crr-live-route-map" class="crr-real-map" aria-label="Mapped walking routes"></div><small class="crr-map-credit">© OpenStreetMap contributors · Routes by Valhalla</small></div>`;}
-  function routeScreen(){return `<div class="page crr-page">${title(t('title'))}<div class="crr-scroll"><label class="crr-label">${esc(t('start'))}<select id="crr-start">${options(state.start)}</select></label><label class="crr-label">${esc(t('end'))}<select id="crr-end">${options(state.end)}</select></label><button class="crr-secondary" type="button" data-crr="geostart">⌖ ${esc(t('location'))}</button><label class="crr-label">${esc(t('time'))}<input id="crr-depart" type="time" value="${esc(service.departure||new Date().toTimeString().slice(0,5))}" /></label><div class="crr-setting">${icon('walk',18)} <select id="crr-mode"><option value="Walking" ${service.mobility==='Walking'?'selected':''}>${esc(l()==='en'?'Walking':'Zu Fuß')}</option><option value="Wheelchair" ${service.mobility==='Wheelchair'?'selected':''}>${esc(l()==='en'?'Wheelchair (unverified)':'Rollstuhl (ungeprüft)')}</option></select></div><div class="crr-toggles"><label><input type="checkbox" id="crr-dog" ${service.withDog?'checked':''} /> ${esc(l()==='en'?'With dog':'Mit Hund')}</label><label><input type="checkbox" id="crr-kids" ${service.withKids?'checked':''} /> ${esc(l()==='en'?'With children':'Mit Kindern')}</label></div><p class="crr-mini">${esc(l()==='de'?'Mit Hund oder Kindern: keine verifizierte Wegeignung.':'Dog/kid suitability cannot be certified from these datasets.')}</p><button class="crr-main" type="button" data-crr="calculate">${esc(t('calculate'))} →</button><p class="crr-mini">${esc(t('path'))}. ${esc(l()==='de'?'Die Route wird nicht auf Barrierefreiheit geprüft.':'Accessibility and dog/kid suitability are not verified.')}</p>${dataNote()}</div></div>`;}
+  function routeScreen(){return `<div class="page crr-page">${title(t('title'))}<div class="crr-scroll"><label class="crr-label">${esc(t('start'))}<select id="crr-start">${options(state.start)}</select></label><label class="crr-label">${esc(t('end'))}<select id="crr-end">${options(state.end)}</select></label><button class="crr-secondary" type="button" data-crr="geostart">⌖ ${esc(t('location'))}</button><label class="crr-label">${esc(t('time'))}<input id="crr-depart" type="time" value="${esc(service.departure||new Date().toTimeString().slice(0,5))}" /></label><div class="crr-setting">${icon('walk',18)} <select id="crr-mode"><option value="Walking" ${service.mobility==='Walking'?'selected':''}>${esc(l()==='en'?'Walking':'Zu Fuß')}</option><option value="Wheelchair" ${service.mobility==='Wheelchair'?'selected':''}>${esc(l()==='en'?'Wheelchair (unverified)':'Rollstuhl (ungeprüft)')}</option></select></div><div class="crr-toggles"><label><input type="checkbox" id="crr-dog" ${service.withDog?'checked':''} /> ${esc(l()==='en'?'With dog':'Mit Hund')}</label><label><input type="checkbox" id="crr-kids" ${service.withKids?'checked':''} /> ${esc(l()==='en'?'With children':'Mit Kindern')}</label></div><button class="crr-main" type="button" data-crr="calculate">${esc(t('calculate'))} →</button></div></div>`;}
   function resultsScreen(){return `<div class="page crr-page crr-map-page">${title(t('title'))}${service.status==='success'?liveMapBox():''}<div class="crr-sheet"><h2>${esc(t('title'))}</h2>${statusBlock()}${service.status==='success'?`<div class="crr-choices">${service.routeList.map(compareCard).join('')}</div><p class="crr-mini">${esc(l()==='de'?'Jede Karte zeigt einen eigenen, berechneten Fußweg. Gibt es keine weiteren sinnvollen Wege, werden weniger Karten angezeigt.':'Each card represents a different computed walking path. If alternatives cannot be found, fewer cards are shown.')}</p><p class="crr-note">${esc(t('depart'))}: ${esc(service.departure)} · ${service.routeList[0].stations?service.routeList[0].stations+' recent climate sensors':t('noMrt')}</p><div class="crr-time-tester"><span>${esc(l()==='de'?'Andere Startzeit testen':'Try another departure time')}:</span><button type="button" data-crr="time" data-at="13:00">13:00</button><button type="button" data-crr="time" data-at="17:00">17:00</button></div><p class="crr-note">${service.routeList[0].daylight?esc(l()==='de'?'Schatten kann sich im Tagesverlauf ändern. Werte sind Modellschätzungen, keine Vorhersagen.':'Shade can change over the day. Values are model estimates, not forecasts.'):esc(l()==='de'?'Nach Sonnenuntergang keine direkte Sonne. Schattenwerte werden nicht berechnet.':'After sunset there is no direct sunlight, so solar shade is not calculated.')}</p><div class="crr-actions"><button type="button" data-crr="compare" class="crr-secondary">${esc(t('compare'))}</button><button type="button" data-crr="details" class="crr-main">${esc(t('details'))} →</button></div>${statusWarnings()}${dataNote()}`:''}</div></div>`;}
   function compareScreen(){return `<div class="page crr-page">${title(t('compare'))}<div class="crr-scroll">${service.status==='success'?service.routeList.map(r=>`<section class="crr-panel"><h3>${esc(routeName(r.id))}</h3>${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><button data-crr="select-details" data-id="${r.id}" class="crr-main">${esc(t('details'))} →</button></section>`).join(''):statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
   const amenities={trees:'Trees in dataset',shade:'Shaded places',water:'Drinking fountains',indoor:'Cool indoor places',toilet:'Public toilets',accessible:'Accessible toilets',transit:'Transit stops',playground:'Playgrounds',stations:'Climate sensor stations'};
   function sources(){return DSETS.map(([kind,slug])=>{const info=service.sources[kind]||{ok:false};return `<a href="https://open-data.dortmund.de/explore/dataset/${slug}/" target="_blank" rel="noopener"><span>${esc(slug)}</span><small>${info.ok?info.count+' loaded'+(info.limited?' (capped)':''):'not loaded'}</small></a>`;}).join('');}
-  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><h3>${esc(t('facilities'))}</h3><p class="crr-mini">Counts are visible dataset matches within a corridor along the route, not exhaustive inventories.</p><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}<details class="crr-sources"><summary>${esc(t('methods'))}</summary><div class="crr-dataset-list">${sources()}</div></details>${statusWarnings()}${dataNote()}</div></div>`;}
-  function navigateScreen(){const r=currentRoute(),steps=r?.maneuvers||[],idx=clamp(service.liveInstruction,0,Math.max(0,steps.length-1));return `<div class="page crr-page crr-map-page">${r?liveMapBox():''}<div class="crr-nav-banner"><b>${esc(t('gps'))} ${service.gpsOn?'●':'○'}</b><p>${esc(steps[idx]?.instruction||t('turns'))}</p><small>${service.gps?`${service.nearestDistance===null?'':Math.round(service.nearestDistance)+' m from route · '}GPS active`:t('preview')}</small></div><div class="crr-sheet crr-nav-sheet"><strong>${r?r.km.toFixed(2)+' km · '+r.minutes+' min':t('unknown')}</strong><div class="crr-actions"><button class="crr-secondary" data-crr="next">${esc(t('next'))} →</button><button class="crr-main" data-crr="end">${esc(t('endNav'))}</button></div><small>${esc(t('limits'))}</small></div></div>`;}
+  function detailsScreen(){const r=currentRoute();return `<div class="page crr-page crr-map-page">${title(t('details'))}${r?liveMapBox():''}<div class="crr-sheet crr-scroll"><h2>${r?esc(routeName(r.id)):esc(t('selection'))}</h2>${r?`${routeSummary(r)}<p>${shadeText(r)}</p><p>${greenText(r)}</p><h3>${esc(t('facilities'))}</h3><div class="crr-amenities">${Object.entries(amenities).map(([key,label])=>`<div><span>${esc(label)}</span><b>${r.amenities[key]??'—'}${r.amenities[key]===null?' (not loaded)':''}</b></div>`).join('')}</div><div class="crr-actions"><button class="crr-main" data-crr="navigate">${esc(t('navigate'))} →</button></div>`:statusBlock()}${statusWarnings()}${dataNote()}</div></div>`;}
+  function navigateScreen(){const r=currentRoute(),steps=r?.maneuvers||[],idx=clamp(service.liveInstruction,0,Math.max(0,steps.length-1));return `<div class="page crr-page crr-map-page">${r?liveMapBox():''}<div class="crr-nav-banner"><b>${esc(t('gps'))} ${service.gpsOn?'●':'○'}</b><p>${esc(steps[idx]?.instruction||t('turns'))}</p><small>${service.gps?`${service.nearestDistance===null?'':Math.round(service.nearestDistance)+' m from route · '}GPS active`:t('preview')}</small></div><div class="crr-sheet crr-nav-sheet"><strong>${r?r.km.toFixed(2)+' km · '+r.minutes+' min':t('unknown')}</strong><div class="crr-actions"><button class="crr-secondary" data-crr="next">${esc(t('next'))} →</button><button class="crr-main" data-crr="end">${esc(t('endNav'))}</button></div></div></div>`;}
   function arrivedScreen(){return `<div class="page crr-page"><div class="crr-arrived"><div>✓</div><h1>${esc(t('arrived'))}</h1><button class="crr-main" data-crr="end">${esc(t('finish'))}</button></div></div>`;}
   function stopGPS(){if(service.watch!==null){navigator.geolocation?.clearWatch(service.watch);service.watch=null;}service.gpsOn=false;service.gps=null;}
   function GPSUpdate(location){const p=[location.coords.latitude,location.coords.longitude],r=currentRoute();if(!r)return;service.gps=p;
